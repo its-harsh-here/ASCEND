@@ -33,6 +33,10 @@
   --atmos-2: rgb(63 216 240 / 0.06);
   --atmos-3: rgb(233 180 76 / 0.05);
   --radius: 14px;
+  /* Chart series (validated with the dataviz palette checker against --surface) */
+  --chart-1: #8270ec;
+  --chart-2: #19a8c4;
+  --chart-grid: rgb(255 255 255 / 0.06);
 }
 
 :root[data-accent='cyan'] { --accent: var(--c-cyan); --accent-2: #2aa7c9; }
@@ -64,6 +68,9 @@
   --atmos-1: rgb(109 115 255 / 0.08);
   --atmos-2: rgb(14 143 168 / 0.05);
   --atmos-3: rgb(176 122 18 / 0.05);
+  --chart-1: #6a55e8;
+  --chart-2: #0e8fa8;
+  --chart-grid: rgb(20 16 40 / 0.07);
 }
 
 @theme inline {
@@ -246,3 +253,13 @@
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 .safe-top { padding-top: env(safe-area-inset-top); }
+
+/* React Flow theming */
+.skill-flow .react-flow { --xy-background-color: transparent; }
+.skill-flow .react-flow__controls { border-radius: 10px; overflow: hidden; border: 1px solid var(--line-strong); box-shadow: none; }
+.skill-flow .react-flow__controls-button { background: var(--surface-2); border-color: var(--line); color: var(--fg-muted); fill: var(--fg-muted); }
+.skill-flow .react-flow__controls-button:hover { background: var(--surface-3); }
+.skill-flow .react-flow__minimap { border-radius: 10px; overflow: hidden; border: 1px solid var(--line-strong); }
+.skill-flow .react-flow__node.branch-label { background: transparent; border: none; box-shadow: none; width: auto; padding: 0; font-family: var(--font-display); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-size: 13px; color: var(--accent); white-space: nowrap; }
+.skill-flow .react-flow__node-skill { background: transparent; border: none; padding: 0; }
+.recharts-cartesian-axis-tick-value { fill: var(--fg-dim); font-size: 11px; font-family: var(--font-mono); }

@@ -73,3 +73,9 @@ export function safeUrl(url: string): string | null {
   }
   return null;
 }
+
+const EMPTY_LIST: never[] = [];
+/** Stable empty-array fallback so memoized hooks don't recompute on every render while data loads. */
+export function orEmpty<T>(v: T[] | undefined): T[] {
+  return v ?? (EMPTY_LIST as T[]);
+}

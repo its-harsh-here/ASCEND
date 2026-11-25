@@ -1,5 +1,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export const buttonVariants = cva(
@@ -37,3 +38,19 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 ) {
   return <button ref={ref} type={type} className={cn(buttonVariants({ variant, size }), className)} {...props} />;
 });
+
+export interface LinkButtonProps extends VariantProps<typeof buttonVariants> {
+  to: string;
+  className?: string;
+  children: ReactNode;
+  'data-testid'?: string;
+}
+
+/** A router link styled as a button (avoids nesting a <button> inside an <a>). */
+export function LinkButton({ to, variant, size, className, children, ...rest }: LinkButtonProps) {
+  return (
+    <Link to={to} className={cn(buttonVariants({ variant, size }), className)} {...rest}>
+      {children}
+    </Link>
+  );
+}
