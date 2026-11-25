@@ -49,10 +49,14 @@ export default defineConfig({
     chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          motion: ['motion'],
-          data: ['dexie', 'dexie-react-hooks', 'zod', 'date-fns', 'zustand'],
+        // Stable vendor chunks: app updates don't invalidate cached framework code.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) return 'react';
+          if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'motion';
+          if (/node_modules\/(dexie|dexie-react-hooks|zod|date-fns|zustand)\//.test(id)) return 'data';
+          if (/node_modules\/(@radix-ui|@floating-ui|react-remove-scroll|react-style-singleton|use-callback-ref|use-sidecar|aria-hidden|tailwind-merge|clsx|class-variance-authority)\//.test(id)) return 'ui';
+          return undefined;
         },
       },
     },

@@ -81,7 +81,7 @@ export default function Onboarding() {
           <p className="mt-3 max-w-md text-sm text-fg-muted">Turn real goals into campaigns, quests and visible progress. Everything stays on this device — no account required.</p>
         </div>
 
-        <div className="mb-5 flex items-center justify-center gap-2" aria-label={`Step ${step + 1} of ${steps.length}`}>
+        <div className="mb-5 flex items-center justify-center gap-2" role="img" aria-label={`Step ${step + 1} of ${steps.length}`}>
           {steps.map((s, i) => (
             <div key={s} className="flex items-center gap-2">
               <motion.span className={cn('h-1.5 rounded-full', i <= step ? 'bg-accent' : 'bg-surface-3')} animate={{ width: i === step ? 28 : 10 }} />
@@ -145,7 +145,7 @@ export default function Onboarding() {
               {step === 3 && (
                 <div>
                   <h2 className="font-display text-xl font-semibold">What is your productivity style?</h2>
-                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3 grid-cols-1">
                     {STYLES.map((s) => (
                       <button key={s.id} onClick={() => setStyle(s.id)} aria-pressed={style === s.id} className={cn('rounded-[14px] border p-4 text-left transition', style === s.id ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]' : 'border-line hover:border-line-strong')}>
                         <span className="text-accent [&_svg]:size-5">{s.icon}</span>

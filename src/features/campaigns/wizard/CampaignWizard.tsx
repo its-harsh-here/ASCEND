@@ -228,7 +228,7 @@ export default function CampaignWizard() {
 
           {step === 2 && (
             <Panel runes className="p-6 md:p-8">
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Start date" htmlFor="c-start"><Input id="c-start" type="date" value={form.startDate} onChange={(e) => set({ startDate: e.target.value })} /></Field>
                 <Field label="End date" htmlFor="c-end"><Input id="c-end" type="date" value={form.endDate} min={form.startDate} onChange={(e) => set({ endDate: e.target.value })} /></Field>
               </div>
@@ -261,7 +261,7 @@ export default function CampaignWizard() {
           {step === 4 && (
             <Panel runes className="p-6 md:p-8">
               <Label>Your current level across these goals</Label>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {SKILL_LEVELS.map((l) => (
                   <button key={l} onClick={() => set({ skillLevel: l })} aria-pressed={form.skillLevel === l} className={cn('rounded-[14px] border p-4 text-left', form.skillLevel === l ? 'border-accent bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]' : 'border-line hover:border-line-strong')}>
                     <div className="font-semibold capitalize">{l}</div>
@@ -469,7 +469,7 @@ function GenerateStep({ form, plan, generate }: { form: WizardForm; plan: DraftP
   return (
     <Panel runes className="p-6 md:p-8">
       <div className="mb-5 flex items-center gap-2 text-xs text-fg-dim"><Cpu className="size-3.5" /> Deterministic local planning engine — templates, dependency graph and a capacity-aware scheduler. No AI service involved.</div>
-      <ol className="grid gap-2 sm:grid-cols-2">
+      <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {PIPELINE.map((s, i) => (
           <motion.li key={s} initial={{ opacity: 0.3 }} animate={{ opacity: i < phase ? 1 : 0.35 }} className="flex items-center gap-3 rounded-xl border border-line bg-surface-2/50 px-3.5 py-2.5">
             <span className={cn('grid size-6 shrink-0 place-items-center rounded-full border', i < phase ? 'border-emerald bg-emerald text-accent-fg' : 'border-line')}>

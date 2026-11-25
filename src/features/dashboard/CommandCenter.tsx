@@ -67,7 +67,7 @@ export default function CommandCenter() {
         </div>
       </motion.header>
 
-      <div className="grid gap-5 xl:grid-cols-12">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
         {show('character') && (
           <motion.div variants={rise} className="xl:col-span-4">
             <CharacterPanel unlocked={unlocks.length} />
@@ -175,7 +175,7 @@ function BriefingPanel({ briefing, today }: { briefing: ReturnType<typeof buildB
   return (
     <Panel className="h-full p-0">
       <PanelHeader eyebrow="Daily briefing" title="Your situation report" icon={<ScrollText />} actions={<Link to="/reviews" className="text-xs font-semibold text-fg-muted hover:text-accent">Daily review →</Link>} />
-      <div className="grid gap-4 px-5 pb-5 lg:grid-cols-[1.2fr_1fr]">
+      <div className="grid grid-cols-1 gap-4 px-5 pb-5 lg:grid-cols-[1.2fr_1fr]">
         <div>
           <ul className="space-y-2" data-testid="briefing-lines">
             {briefing.lines.map((l, i) => (

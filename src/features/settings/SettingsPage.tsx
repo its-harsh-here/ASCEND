@@ -62,7 +62,7 @@ export default function SettingsPage() {
   return (
     <div>
       <PageHeader eyebrow="Configuration" title="Settings" description="All settings are stored locally on this device." />
-      <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <div className="sticky top-24 space-y-0.5">
             {SECTIONS.map((x) => <a key={x.id} href={`#${x.id}`} onClick={(e) => { e.preventDefault(); document.getElementById(x.id)?.scrollIntoView({ behavior: 'smooth' }); }} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-fg-muted hover:bg-surface-2 hover:text-fg [&_svg]:size-4">{x.icon}{x.label}</a>)}
@@ -235,7 +235,7 @@ function AiSection({ settings: s }: { settings: Settings }) {
       </Row>
       {ai.provider === 'ollama' && (
         <>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Ollama URL" htmlFor="ai-url"><Input id="ai-url" defaultValue={ai.ollamaUrl} onBlur={(e) => set({ ollamaUrl: e.target.value.trim() || 'http://localhost:11434' })} /></Field>
             <Field label="Model" htmlFor="ai-model"><Input id="ai-model" defaultValue={ai.ollamaModel} onBlur={(e) => set({ ollamaModel: e.target.value.trim() || 'llama3.2' })} /></Field>
           </div>

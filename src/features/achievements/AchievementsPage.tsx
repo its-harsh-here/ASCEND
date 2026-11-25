@@ -56,7 +56,7 @@ function AchievementGrid() {
         <Badge tone="gold" className="h-8 px-3 text-sm"><Trophy /> {unlocks.length} / {ACHIEVEMENTS.length} unlocked</Badge>
         {(['all', 'unlocked', 'locked'] as const).map((f) => <Button key={f} size="xs" variant={filter === f ? 'outline' : 'ghost'} onClick={() => setFilter(f)} className="capitalize">{f}</Button>)}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {list.map((a, i) => {
           const at = map.get(a.id);
           const color = RARITY_COLOR[a.rarity];
@@ -113,7 +113,7 @@ function RewardShop() {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
       <div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-[color-mix(in_oklab,var(--c-gold)_8%,transparent)] px-4 py-2.5">
@@ -128,7 +128,7 @@ function RewardShop() {
         {active.length === 0 ? (
           <Panel><EmptyState icon={<Gift />} title="Stock your reward shop" description="Define real-life treats — a movie night, a gaming break, a day off. Redeeming is virtual bookkeeping; nothing is purchased." action={<Button variant="primary" onClick={() => setEditing({ title: '', cost: 100, icon: 'gift', description: '' })}><Plus /> Create reward</Button>} /></Panel>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {active.map((r) => {
               const can = coins >= r.cost;
               return (
@@ -204,7 +204,7 @@ function StreakView() {
   const { streak } = profile;
   const frozen = new Set(streak.frozenDates);
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_1.2fr]">
       <Panel runes className="p-6 text-center">
         <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2.4, repeat: Infinity }} className="mx-auto grid size-28 place-items-center rounded-full bg-[radial-gradient(circle,color-mix(in_oklab,var(--c-gold)_30%,transparent),transparent_70%)]">
           <Flame className="size-14 text-gold" fill={streak.activeToday ? 'currentColor' : 'none'} />

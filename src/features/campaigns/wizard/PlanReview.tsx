@@ -72,7 +72,7 @@ export function PlanReview({ plan, setPlan }: { plan: DraftPlan; setPlan: (p: Dr
           </Button>
         </div>
         {report.options.length > 0 && (
-          <div className="mt-4 grid gap-2 md:grid-cols-2">
+          <div className="mt-4 grid gap-2 md:grid-cols-2 grid-cols-1">
             {report.options.map((o) => (
               <button key={o.kind} onClick={() => applyOption(o)} className="group flex items-start gap-3 rounded-xl border border-line bg-surface-2/60 p-3 text-left hover:border-accent" data-testid={`feasibility-option-${o.kind}`}>
                 <span className="mt-0.5 text-accent [&_svg]:size-4">{{ extend: <CalendarRange />, hours: <Clock />, scope: <Scissors />, prioritize: <Users /> }[o.kind]}</span>
@@ -99,7 +99,7 @@ export function PlanReview({ plan, setPlan }: { plan: DraftPlan; setPlan: (p: Dr
       </Panel>
 
       {(plan.notes.length > 0 || plan.recurring.length > 0) && (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {plan.notes.length > 0 && (
             <Panel className="p-4">
               <div className="eyebrow mb-2">How this plan was built</div>
