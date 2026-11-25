@@ -119,6 +119,8 @@ test('works offline after the first visit (service worker)', async ({ page, cont
   await page.getByLabel('Your name').fill('Offline');
   for (let i = 0; i < 4; i++) await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-empty').click();
+  // Wait for the dashboard: proves onboarding was committed to IndexedDB before we reload.
+  await expect(page.getByRole('heading', { name: /Offline/ })).toBeVisible();
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready;
   });
