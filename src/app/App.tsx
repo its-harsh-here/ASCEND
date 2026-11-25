@@ -242,7 +242,10 @@ function Root() {
       void seedDemoData();
       return;
     }
-    void db.settings.get('settings').then((s) => (s ? undefined : db.settings.put({ ...DEFAULT_SETTINGS, createdAt: nowIso() })));
+    // Atomic check-and-insert so it can never overwrite settings saved concurrently (e.g. by onboarding).
+    void db.transaction('rw', db.settings, async () => {
+      if (!(await db.settings.get('settings'))) await db.settings.put({ ...DEFAULT_SETTINGS, createdAt: nowIso() });
+    });
   }, []);
   useEffect(() => {
     void ensureRecurringInstances(today);
