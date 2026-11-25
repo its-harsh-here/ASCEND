@@ -98,7 +98,7 @@ function DailyReview() {
   };
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.3fr_1fr]">
       <div className="space-y-5">
         <div className="flex items-center gap-2">
           <Button size="icon-sm" variant="ghost" onClick={() => setDay(addDaysKey(day, -1))} aria-label="Previous day"><ChevronLeft /></Button>
@@ -212,7 +212,7 @@ function WeeklyReview() {
         <StatTile label="Focus" value={formatMinutes(stats.focus)} tone="cyan" />
         <StatTile label="Completion" value={stats.rate === null ? '—' : `${Math.round(stats.rate * 100)}%`} sub={`${stats.missed.length} missed`} tone={stats.missed.length ? 'crimson' : 'accent'} />
       </div>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Panel className="p-5">
           <div className="eyebrow mb-3 flex items-center gap-2"><Trophy className="size-3.5 text-gold" /> Weekly achievements</div>
           {stats.ach.length === 0 ? <p className="text-sm text-fg-dim">No achievements unlocked this week.</p> : <div className="flex flex-wrap gap-1.5">{stats.ach.map((a) => <Badge key={a!.id} tone="gold">{a!.title}</Badge>)}</div>}
@@ -240,7 +240,7 @@ function WeeklyReview() {
         </Panel>
       </div>
       <Panel className="p-5">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <Field label="Biggest wins" htmlFor="wr-w"><Textarea id="wr-w" value={draft.wins ?? ''} onChange={(e) => setDraft({ ...draft, wins: e.target.value })} /></Field>
           <Field label="What to change" htmlFor="wr-b"><Textarea id="wr-b" value={draft.blockers ?? ''} onChange={(e) => setDraft({ ...draft, blockers: e.target.value })} /></Field>
           <Field label="Notes for next week" htmlFor="wr-n"><Textarea id="wr-n" value={draft.notes ?? ''} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} /></Field>

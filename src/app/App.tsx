@@ -1,9 +1,7 @@
 import { MotionConfig } from 'motion/react';
-import { Component, lazy, Suspense, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { QuestEditorDialog } from '@/components/quest/QuestEditor';
-import { QuickAddDialog } from '@/components/quest/QuickAdd';
 import { Button } from '@/components/ui/button';
 import { Skeleton, TooltipProvider } from '@/components/ui/primitives';
 import { db, isDemoMode } from '@/db/schema';
@@ -15,7 +13,6 @@ import { ensureRecurringInstances } from '@/services/recurring';
 import { seedDemoData } from '@/services/demo';
 import { useUI } from '@/store/ui';
 import { CelebrationLayer, Toaster } from './Celebrations';
-import { CommandPalette } from './CommandPalette';
 import { G_SHORTCUTS } from './nav';
 import { MobileNav, PageTransition, Sidebar, Topbar } from './Shell';
 
@@ -35,6 +32,18 @@ const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const ReviewsPage = lazy(() => import('@/features/reviews/ReviewsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const Onboarding = lazy(() => import('@/features/onboarding/Onboarding'));
+const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
+const QuickAddDialog = lazy(() => import('@/components/quest/QuickAdd').then((m) => ({ default: m.QuickAddDialog })));
+const QuestEditorDialog = lazy(() => import('@/components/quest/QuestEditor').then((m) => ({ default: m.QuestEditorDialog })));
+
+/** Mount a lazily-loaded overlay the first time it opens, then keep it mounted so exit animations work. */
+function LazyMount({ open, children }: { open: boolean; children: ReactNode }) {
+  const [loaded, setLoaded] = useState(open);
+  useEffect(() => {
+    if (open) setLoaded(true);
+  }, [open]);
+  return loaded ? <Suspense fallback={null}>{children}</Suspense> : null;
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }, { error: Error | null }> {
   override state = { error: null as Error | null };
@@ -64,7 +73,7 @@ function PageFallback() {
   return (
     <div className="space-y-4" aria-busy="true" aria-label="Loading">
       <Skeleton className="h-10 w-72" />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Skeleton className="h-40" />
         <Skeleton className="h-40" />
         <Skeleton className="h-40" />
@@ -176,6 +185,9 @@ function PwaPrompt() {
 
 function AppShell() {
   const location = useLocation();
+  const paletteOpen = useUI((s) => s.paletteOpen);
+  const quickAddOpen = useUI((s) => s.quickAddOpen);
+  const editorOpen = useUI((s) => s.editor.open);
   useGlobalShortcuts();
   return (
     <div className="atmosphere flex min-h-dvh">
@@ -212,9 +224,9 @@ function AppShell() {
         </main>
       </div>
       <MobileNav />
-      <CommandPalette />
-      <QuickAddDialog />
-      <QuestEditorDialog />
+      <LazyMount open={paletteOpen}><CommandPalette /></LazyMount>
+      <LazyMount open={quickAddOpen}><QuickAddDialog /></LazyMount>
+      <LazyMount open={editorOpen}><QuestEditorDialog /></LazyMount>
     </div>
   );
 }
@@ -240,7 +252,7 @@ function Root() {
   }, [settings?.onboarded]);
 
   const reduce = settings?.reducedMotion === 'reduce' ? 'always' : settings?.reducedMotion === 'full' ? 'never' : 'user';
-  if (!settings) {
+  if (!settings || (isDemoMode() && !settings.onboarded)) {
     return (
       <div className="atmosphere grid min-h-dvh place-items-center">
         <div className="font-display text-xl tracking-[0.3em] text-fg-muted">ASCEND</div>

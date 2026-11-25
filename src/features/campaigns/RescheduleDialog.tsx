@@ -56,12 +56,12 @@ export function RescheduleDialog({ open, onOpenChange, campaign, quests, milesto
     >
       {!preview ? <p className="py-8 text-center text-sm text-fg-dim">Calculating…</p> : (
         <div className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-xl border border-line bg-surface-2/60 p-3"><div className="eyebrow">Missed</div><div className="font-num text-2xl font-semibold text-crimson">{preview.missed.length}</div></div>
             <div className="rounded-xl border border-line bg-surface-2/60 p-3"><div className="eyebrow">Will move</div><div className="font-num text-2xl font-semibold text-accent">{preview.moves.length}</div></div>
             <div className="rounded-xl border border-line bg-surface-2/60 p-3"><div className="eyebrow">Locked deadlines</div><div className="flex items-center gap-1.5 font-num text-2xl font-semibold text-gold"><Lock className="size-4" />{lockedCount}</div></div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Campaign end date" htmlFor="rs-end"><Input id="rs-end" type="date" value={endDate} min={today} onChange={(e) => setEndDate(e.target.value || campaign.endDate)} /></Field>
             <Field label="Hours per day" htmlFor="rs-h"><Input id="rs-h" type="number" min={0.5} max={16} step={0.5} value={hours} onChange={(e) => setHours(Math.max(0.5, Number(e.target.value) || campaign.hoursPerDay))} /></Field>
             <label className="flex items-center justify-between gap-2 rounded-xl border border-line px-3 text-sm"><span className="flex items-center gap-2"><Scissors className="size-4 text-cyan" /> Skip optional quests</span><Switch checked={dropOptional} onCheckedChange={setDropOptional} /></label>

@@ -178,7 +178,7 @@ export function QuestEditorDialog() {
         </>
       }
     >
-      <div className="grid gap-5 md:grid-cols-[1fr_260px]">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_260px]">
         <div className="space-y-4">
           <Field label="Title" htmlFor="q-title">
             <Input id="q-title" autoFocus value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Write a multi-stage Dockerfile" maxLength={300} />

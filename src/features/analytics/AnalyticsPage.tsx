@@ -103,10 +103,10 @@ export default function AnalyticsPage() {
 
       <Panel className="mb-5 p-5">
         <div className="eyebrow mb-3 flex items-center gap-2"><Lightbulb className="size-3.5 text-gold" /> Observations from your data</div>
-        <ul className="grid gap-2 md:grid-cols-2">{data.insights.map((t) => <li key={t} className="flex gap-2 text-sm text-fg-muted"><span className="mt-2 size-1.5 shrink-0 rotate-45 bg-gold" />{t}</li>)}</ul>
+        <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">{data.insights.map((t) => <li key={t} className="flex gap-2 text-sm text-fg-muted"><span className="mt-2 size-1.5 shrink-0 rotate-45 bg-gold" />{t}</li>)}</ul>
       </Panel>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ChartPanel
           title="Experience earned"
           eyebrow={grain === 'day' ? 'Daily XP' : grain === 'week' ? 'Weekly XP' : 'Monthly XP'}

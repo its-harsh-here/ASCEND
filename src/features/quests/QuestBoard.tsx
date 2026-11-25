@@ -231,7 +231,7 @@ function Board({ quests, manual }: { quests: Quest[]; manual: boolean }) {
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={(e: DragStartEvent) => setActiveId(String(e.active.id))} onDragEnd={(e) => void onEnd(e)} onDragCancel={() => setActiveId(null)}>
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {COLUMNS.map((c) => <Column key={c.id} col={c} quests={columns[c.id]} />)}
       </div>
       <DragOverlay dropAnimation={{ duration: 200 }}>{active ? <Card quest={active} overlay /> : null}</DragOverlay>

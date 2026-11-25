@@ -31,7 +31,7 @@ export default function CampaignsPage() {
       {visible.length === 0 ? (
         <div className="panel"><EmptyState icon={<Flag />} title="Your first campaign awaits" description="Describe a goal in plain language — the planner builds a realistic, editable roadmap." action={<LinkButton to="/campaigns/new" variant="primary"><Target /> Create campaign</LinkButton>} /></div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map((c, i) => {
             const p = campaignProgress(c, quests);
             const total = diffDays(c.endDate, c.startDate) + 1;
