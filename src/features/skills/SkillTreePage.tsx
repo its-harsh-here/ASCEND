@@ -118,6 +118,7 @@ export default function SkillTreePage() {
     return { nodes, edges };
   }, [progress, fresh, selected]);
 
+  const firstRowIds = useMemo(() => SKILLS.filter((s) => SKILL_BRANCHES.findIndex((b) => b.id === s.branch) < 4).map((s) => ({ id: s.id })), []);
   const sel = selected ? progress.get(selected) : undefined;
   const related = sel ? quests.filter((q) => q.skillIds.includes(sel.skill.id) && !q.archivedAt) : [];
   const unlockedCount = [...progress.values()].filter((p) => p.unlocked).length;
@@ -135,7 +136,8 @@ export default function SkillTreePage() {
               nodeTypes={nodeTypes}
               colorMode={settings?.theme === 'light' ? 'light' : 'dark'}
               fitView
-              fitViewOptions={{ padding: 0.08, minZoom: 0.45 }}
+              // Open on the first row of branches at a readable zoom; the second row is a pan away.
+              fitViewOptions={{ padding: 0.06, nodes: firstRowIds }}
               minZoom={0.2}
               maxZoom={1.6}
               nodesConnectable={false}

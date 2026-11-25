@@ -1,149 +1,232 @@
-# ASCEND — a productivity RPG
+<div align="center">
 
-Ascend turns real goals into **campaigns**, **questlines**, **quests** and visible progress. It looks and feels like a game's progression screen and runs entirely in your browser.
+<img src="public/favicon.svg" width="88" alt="Ascend logo" />
 
-- **Costs ₹0.** No accounts, servers, subscriptions or paid APIs.
-- **Local-first and offline.** Data lives in IndexedDB on your device. After the first visit the installable PWA works without a network.
-- **The planner is deterministic.** Goals are matched against a curated catalog of 21 learning paths and scheduled by a capacity-aware algorithm. It is not a language model and does not pretend to be one.
-- **Local AI is optional.** You can connect Ollama or in-browser WebLLM for milestone suggestions and summaries. Everything works without it.
+# ASCEND
+
+**A local-first productivity RPG. Turn real goals into campaigns, quests and visible progress.**
+
+[![CI](https://github.com/its-harsh-here/ASCEND/actions/workflows/ci.yml/badge.svg)](https://github.com/its-harsh-here/ASCEND/actions/workflows/ci.yml)
+[![Deploy](https://github.com/its-harsh-here/ASCEND/actions/workflows/deploy.yml/badge.svg)](https://github.com/its-harsh-here/ASCEND/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-8270ec.svg)](LICENSE)
+![PWA](https://img.shields.io/badge/PWA-offline%20ready-19a8c4)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6)
+
+### [▶ Open Ascend](https://its-harsh-here.github.io/ASCEND/)
+
+Free · works offline · no account · your data never leaves your device
+
+<img src="docs/screenshots/command-center.jpg" alt="Ascend Command Center dashboard" width="100%" />
+
+</div>
 
 ---
+
+## What is Ascend?
+
+Ascend is a personal productivity app that feels like a game's progression screen:
+
+- A big goal becomes a **campaign**.
+- Each area of the goal becomes a **questline**.
+- Every concrete task is a **quest** with XP, a difficulty and a deliverable.
+- Progress shows up as levels, a skill tree, streaks and achievements.
+
+Some things that make it different:
+
+- **It actually plans for you, deterministically.** Describe your goal in plain English. Ascend matches it against 21 curated learning paths (Docker, Kubernetes, AWS, DSA, ML, research, exams, fitness and more). It then builds milestones, dependencies and estimates, and schedules them around your real availability. It isn't a language model and doesn't pretend to be one. It shows you exactly which words it recognized.
+- **It never overloads you silently.** If the plan doesn't fit, you see how far over it is and get fixes that have already been verified: extend the timeline, add daily time, cut optional work, or defer a goal.
+- **It's yours.** No server, no sign-up, no tracking, no paid APIs. Install it as an app and it works offline.
+
+## Screenshots
+
+| Plan review with feasibility check | Gantt timeline with dependencies |
+|---|---|
+| ![Plan review](docs/screenshots/plan-review.jpg) | ![Timeline](docs/screenshots/timeline.jpg) |
+| **Skill tree driven by completed quests** | **Analytics from recorded data only** |
+| ![Skill tree](docs/screenshots/skill-tree.jpg) | ![Analytics](docs/screenshots/analytics.jpg) |
+| **Calendar with workload and time blocks** | **Focus Chamber** |
+| ![Calendar](docs/screenshots/calendar.jpg) | ![Focus Chamber](docs/screenshots/focus-chamber.jpg) |
+| **Live goal interpretation in the wizard** | **Achievements and reward shop** |
+| ![Wizard](docs/screenshots/wizard-objective.jpg) | ![Achievements](docs/screenshots/achievements.jpg) |
+
+<p align="center"><img src="docs/screenshots/mobile-today.jpg" alt="Mobile view" width="300" /></p>
 
 ## Features
 
-| Area | What it does |
-|---|---|
-| **Command Center** | Character level and title, XP bar, streak, weekly consistency, a daily briefing with a recommended next quest (and why), today's quests by category, campaign pace, a daily timeline, live stats and a contribution heatmap |
-| **Campaign wizard** | 9 steps: name → objective in plain language (live, transparent interpretation) → dates → time → level and constraints → goals → generate → review → activate |
-| **Planning engine** | Milestones, dependencies, granular quests with deliverables, estimates adapted to skill level, priorities, revision and buffer days, XP, and a feasibility check with extend / increase time / reduce scope / prioritize options. Overload is never silent. |
-| **Plan review** | Edit, add, delete and reorder quests and milestones, change estimates and priorities, lock deadlines, regenerate a questline without losing your edits, reschedule the whole plan |
-| **Quests** | Main, side, daily, weekly, boss and legendary. Subtasks, prerequisites (with cycle detection), links, tags, notes, recurrence, XP overrides, scheduling and locked deadlines |
-| **Quest Board** | Drag-and-drop kanban plus a list view with search, filters, sorting and bulk edit |
-| **Timeline** | Gantt roadmap with day/week/month zoom: drag to reschedule, dependency lines, critical path, milestones, deadline warnings |
-| **Calendar** | Month, week, day and agenda views. Drag and resize quests, add time blocks (commitments), see daily workload, filter by campaign |
-| **Smart rescheduling** | Finds missed quests, rebalances the remaining work from today and shows a before/after preview. Nothing applies until you confirm, and locked deadlines never move. |
-| **Gamification** | Configurable XP curve and titles (Novice → Ascendant), 27 achievements across four rarities, a skill tree built from completed quests, coins and a reward shop, streaks with rest days and freezes |
-| **Focus Chamber** | Timestamp-based Pomodoro and custom timer that survives reloads and sleeping tabs. Links to quests, logs history, plays generated ambient audio, has distraction-free and fullscreen modes |
-| **Analytics** | XP (daily/weekly/monthly), quests completed, focus hours, planned vs actual, completion by difficulty, time per campaign, skill growth, missed deadlines, and observations computed from your data |
-| **Reviews** | Daily and weekly reviews built from real data, with reflection notes and tomorrow's priorities |
-| **Data** | Versioned JSON backup and restore (validated), CSV export, integrity check and repair, backup reminders, a persistent-storage request, and a demo mode in a separate database |
+<details open>
+<summary><b>Planning</b></summary>
 
-Keyboard: `Ctrl/⌘ K` command palette · `Q` quick add · `N` new quest · `F` focus · `G` then `D/T/C/B/L/K/S/A/R` to navigate · `[` collapse sidebar.
+- **Campaign wizard (9 steps):** name → objective in plain language → dates → daily time and workdays → experience level and constraints → goals → generate → review → activate.
+- **Planning engine:**
+  - Milestones with measurable deliverables, and estimates adapted to your skill level
+  - Dependency chains, including across goals (Kubernetes waits for Docker images)
+  - Priorities, difficulty and XP
+  - Revision and buffer days
+- **Plan review:**
+  - Edit, add, delete and reorder quests and milestones
+  - Lock deadlines
+  - Regenerate a questline without losing your edits
+  - Reschedule the whole plan
+- **Smart rescheduling:** missed a few days? Rebalance the remaining work from today and see a before/after preview first. Locked deadlines never move.
 
-Quick-add syntax: `Finish Docker networking tomorrow 2h #cloud !high`. It also understands `due fri`, `at 3pm`, `~hard`, `@boss` and `+campaign`.
+</details>
 
----
+<details open>
+<summary><b>Quests and views</b></summary>
+
+- **Quest types:** main, side, daily, weekly, boss and legendary.
+- **Quest details:** subtasks, prerequisites (with cycle detection), links, tags, notes, recurrence and XP overrides.
+- **Quick add** with natural syntax: `Finish Docker networking tomorrow 2h #cloud !high`. The parsed fields are shown before saving.
+- **Command palette** (`Ctrl/⌘ K`) and keyboard shortcuts.
+- **Command Center:**
+  - Daily briefing with a recommended next quest and why
+  - Today's quests, campaign pace and a daily timeline
+  - Activity heatmap
+- **Quest Board:** drag-and-drop kanban, plus a list view with filters and bulk edit.
+- **Timeline:** Gantt view with day/week/month zoom, drag to reschedule, dependency lines, critical path and milestones.
+- **Calendar:** month, week, day and agenda views. Drag and resize, add time blocks for commitments, see the workload per day.
+
+</details>
+
+<details open>
+<summary><b>Progression and wellbeing</b></summary>
+
+- **XP and levels:** configurable XP and titles from Novice to Ascendant. XP is awarded at most once per quest, guaranteed at the database level.
+- **27 achievements** across four rarities.
+- **Skill tree** that grows only from completed work.
+- **Coins and a reward shop** for real-life treats you define.
+- **Streaks:** rest days never break a streak, and earned freezes protect you on a missed day.
+- **Focus Chamber:** timestamp-accurate timer that survives reloads and sleeping tabs, links to quests, plays generated ambient sound, has a distraction-free mode.
+- **Reviews and analytics:** daily and weekly reviews, plus analytics that only show recorded data.
+
+</details>
+
+## How the planner works
+
+```mermaid
+flowchart LR
+  A[Your goal in<br/>plain language] --> B[Goal parser<br/>keyword matching<br/>shows what matched]
+  B --> C[21 goal templates<br/>milestones · deliverables<br/>prerequisites]
+  B -. unrecognized .-> G[Editable generic<br/>scaffold or optional<br/>local-AI suggestions]
+  C --> D[Planner<br/>skill-level adaptation<br/>dependency chains]
+  G --> D
+  D --> E[Capacity-aware scheduler<br/>workdays · commitments<br/>revision & buffer days]
+  E --> F{Fits?}
+  F -- yes --> R[Review & activate]
+  F -- no --> X[Verified options<br/>extend · add time ·<br/>cut scope · defer goals]
+  X --> E
+```
+
+The full specification is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#5-planning-engine-specification).
 
 ## Quick start
 
-Requires Node.js 20+ (22 recommended).
+Requires Node.js 20+ (22 recommended, see `.nvmrc`).
 
 ```bash
-npm install
+git clone https://github.com/its-harsh-here/ASCEND.git
+```
+
+```bash
+cd ASCEND && npm install
 ```
 
 ```bash
 npm run dev
 ```
 
-Open http://localhost:5173. Other scripts:
+Then open http://localhost:5173. Want to look around first? Pick **Explore demo mode** during onboarding. It uses a separate database, so your real data stays empty.
 
 | Command | Purpose |
 |---|---|
+| `npm run dev` | Development server |
 | `npm run build` | Typecheck and production build into `dist/` |
 | `npm run preview` | Serve the production build on port 4173 |
-| `npm run typecheck` | TypeScript (strict) |
-| `npm run lint` | ESLint |
-| `npm test` | Vitest unit and integration tests (fake IndexedDB) |
-| `npm run e2e` | Playwright end-to-end tests against the production preview |
+| `npm run typecheck` / `npm run lint` | TypeScript (strict) / ESLint |
+| `npm test` | Unit and integration tests (Vitest, fake IndexedDB) |
+| `npm run e2e` | End-to-end tests (Playwright) against the production preview |
 
-If Playwright has no browser yet, run `npx playwright install chromium` once.
+## Deployment
 
----
+Ascend is a static site with hash routing, so any static host works without rewrite rules. `BASE_PATH` sets the URL prefix at build time.
 
-## Deployment (free)
+**GitHub Pages (used for the live site):**
 
-The app uses hash-based routing (`/#/campaigns`), so any static host works without rewrite rules. `BASE_PATH` sets the URL prefix at build time.
+- Every push to `main` runs [`deploy.yml`](.github/workflows/deploy.yml). It typechecks, lints, runs the unit tests, builds with `BASE_PATH=/<repo>/` and publishes.
+- A final **verify-live** job then opens the real URL in a browser, checks the service worker and manifest, completes onboarding and reloads offline.
+- To set up a fork, go to **Settings → Pages → Source** and choose **GitHub Actions**.
 
-### GitHub Pages (preferred)
-
-1. Push to GitHub. `.github/workflows/deploy.yml` builds with `BASE_PATH=/<repo-name>/` on every push to `main`.
-2. In the repository, open **Settings → Pages → Build and deployment → Source** and choose **GitHub Actions** (one-time).
-3. The site is published at `https://<user>.github.io/<repo-name>/`.
-
-To build the same output locally:
-
-```bash
-BASE_PATH=/TaskManager/ npm run build
-```
-
-### Cloudflare Pages
-
-Connect the repository in the Cloudflare dashboard and use:
+**Cloudflare Pages:**
 
 - Build command: `npm run build`
-- Build output directory: `dist`
-- Environment variable: `NODE_VERSION=22` (leave `BASE_PATH` unset: the site is served from `/`)
+- Output directory: `dist`
+- Environment variable: `NODE_VERSION=22` (leave `BASE_PATH` unset)
 
-### Any static host
-
-Run `npm run build` and upload `dist/`. Serve it over HTTPS: service workers and installation need a secure origin (`localhost` is exempt).
-
-CI (`.github/workflows/ci.yml`) runs typecheck, lint, unit tests, build and the Playwright suite on pull requests.
-
----
+**Anywhere else:** run `npm run build` and serve `dist/` over HTTPS. Service workers need a secure origin.
 
 ## Your data
 
-- Everything is stored in the browser's IndexedDB (via Dexie) **on this device only**. There is no sync.
-- **Local storage is not a backup.** Clearing site data, private browsing or browser storage eviction can delete it. Use **Settings → Data → Export JSON backup** regularly. Reminders are configurable, and the app asks the browser for persistent storage, which the browser may decline.
-- Restores are validated row by row with Zod and applied in a single transaction. Dangling references are repaired and reported.
-- Demo mode uses a separate database (`ascend-demo`), so sample data never mixes with your journal.
+- Everything lives in your browser's IndexedDB **on this device only**. There is no cloud sync.
+- **Browser storage is not a backup.** Clearing site data or private browsing can erase it, and so can browser storage eviction. Export regularly from **Settings → Data → Export JSON backup**. Ascend reminds you and asks the browser for persistent storage, which the browser may decline.
+- Backups are versioned. On restore, every record is validated and the whole restore runs in a single transaction. CSV export is available for spreadsheets.
 
 ## Optional local AI
 
-Settings → Local AI. Both options run on your hardware, need no API keys, and are only reported as available after a real round-trip succeeds.
+Ascend works fully without AI. If you want extras (milestone suggestions for unrecognized goals, description rewrites, review summaries), connect a model running on your own hardware under **Settings → Local AI**:
 
-- **Ollama:** run `OLLAMA_ORIGINS="https://<your-site>" ollama serve` and `ollama pull llama3.2`. Never expose Ollama publicly. Browsers may block HTTPS pages from calling local services; running Ascend locally avoids that.
-- **WebLLM:** needs WebGPU. The first load downloads model weights (hundreds of MB) from a public CDN.
+- **Ollama:**
 
-AI is used for milestone suggestions on unrecognized goals, description rewrites and review narratives. Model output is schema-validated and labelled as AI-generated.
+  ```bash
+  OLLAMA_ORIGINS="https://its-harsh-here.github.io" ollama serve
+  ```
 
----
+  Then pull the model:
 
-## Quality: measured results
+  ```bash
+  ollama pull llama3.2
+  ```
 
-All numbers come from runs during development, not estimates.
+  Never expose Ollama publicly.
+- **WebLLM:** runs in the browser with WebGPU. The first load downloads model weights (hundreds of MB).
 
-- **Unit and integration tests:** 71 passing. They cover quest create/edit/complete, XP granted once (including reopen and recomplete), levels, achievements, recurrence, scheduling constraints, dependency ordering, locked deadlines, rescheduling, plan-review operations, backup export/restore and validation, CSV escaping, the v1→v2 database migration, and persistence across reconnects.
-- **End-to-end (Playwright, Chromium):** 4 passing.
-  - Full journey: onboarding → winter-break campaign with six goals → generate → review (resolving overload) → activate → complete a quest → XP updates (and does not duplicate on reopen) → skill tree → reload persists → backup export.
-  - Quick-add parsing.
-  - Offline reload through the service worker.
-  - Mobile layout (390px, no horizontal overflow).
-- **Lighthouse 12.6** (production build, first-run screen):
+No API keys are used. AI is only reported as available after a real connection check. Model output is schema-validated and labelled.
+
+## Quality
+
+Measured, not estimated:
+
+- **71 unit and integration tests.** They cover:
+  - XP granted once (including reopen and recomplete), levels and achievements
+  - Recurrence, scheduling constraints, dependency ordering and locked deadlines
+  - Rescheduling, backup round-trips and validation
+  - CSV injection safety, the database migration, and persistence
+- **End-to-end tests:**
+  - The full journey: onboarding → six-goal campaign → overload resolution → activation → quest completion → XP → skill tree → reload → backup
+  - Quick add, offline mode and mobile layout
+  - A live smoke test against the deployed site after every deploy
+- **Lighthouse 12.6 (production build):**
 
   | | Performance | Accessibility | Best practices | SEO |
   |---|---|---|---|---|
   | Desktop | 100 | 100 | 100 | 100 |
   | Mobile (simulated slow 4G) | 86 | 100 | 100 | 100 |
 
-  The first measurement was desktop 99/96/100/92. Fixing an ARIA attribute, adding `robots.txt` and splitting vendor chunks brought it to the numbers above.
-
-  Mobile LCP is about 3.4s under Lighthouse throttling. Heavy views (calendar, analytics, skill tree, wizard) are lazy-loaded.
-
-## Architecture
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module layout, database schema, route map, planning-engine specification and design system.
-
-**Stack:** React 19, TypeScript (strict), Vite 7, Tailwind CSS 4, Radix primitives (shadcn-style components), Lucide, Motion, Zustand, Dexie/IndexedDB, Zod, date-fns, Recharts, dnd-kit, React Flow, FullCalendar (standard, MIT), vite-plugin-pwa, Vitest, Testing Library, Playwright.
+**Stack:** React 19, TypeScript (strict), Vite 7, Tailwind CSS 4, Radix primitives, Motion, Zustand, Dexie (IndexedDB), Zod, date-fns, Recharts, dnd-kit, React Flow, FullCalendar, vite-plugin-pwa, Vitest, Playwright.
 
 ## Known limitations
 
-- No cloud sync. Data is per browser/device. Move it between devices with JSON backups.
-- Background notifications are not reliable on every platform. Reminders are mainly in-app.
-- The goal catalog covers 21 domains. Anything outside it gets a transparent generic scaffold that you edit, or optional local-AI suggestions.
+- No sync between devices. Use JSON backups to move your data.
+- Background notifications are not reliable on every platform, so reminders are mainly in-app.
+- Goals outside the 21-template catalog get a transparent, editable scaffold rather than a tailored plan.
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues privately ([SECURITY.md](SECURITY.md)). Changes are tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT. Fonts (Cinzel, Manrope, JetBrains Mono) are bundled from Fontsource under the SIL Open Font License. Icons are Lucide (ISC). Avatars, app icon and ambient sounds are original to this project.
+[MIT](LICENSE).
+
+- Fonts (Cinzel, Manrope, JetBrains Mono) are bundled via Fontsource under the SIL Open Font License.
+- Icons are by [Lucide](https://lucide.dev) (ISC).
+- The avatars, app icon and ambient soundscapes are original to this project.

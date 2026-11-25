@@ -2,9 +2,34 @@
   "name": "ascend",
   "private": true,
   "version": "1.0.0",
-  "description": "ASCEND — a local-first, RPG-inspired productivity application",
-  "type": "module",
+  "description": "A local-first, offline productivity RPG: turn real goals into campaigns, questlines and quests with a deterministic planning engine, XP, skill trees and analytics.",
+  "keywords": [
+    "productivity",
+    "rpg",
+    "gamification",
+    "task-manager",
+    "planner",
+    "pwa",
+    "offline-first",
+    "local-first",
+    "react",
+    "typescript",
+    "indexeddb"
+  ],
+  "homepage": "https://its-harsh-here.github.io/ASCEND/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/its-harsh-here/ASCEND.git"
+  },
+  "bugs": {
+    "url": "https://github.com/its-harsh-here/ASCEND/issues"
+  },
+  "author": "its-harsh-here (https://github.com/its-harsh-here)",
   "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
