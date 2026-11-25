@@ -1,0 +1,43 @@
+name: Bug report
+description: Something isn't working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting! Your data lives only in your browser — please don't attach backups containing personal information.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See …
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 130 on Windows 11 / Safari on iPhone 15
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How are you using Ascend?
+      options:
+        - Website (github.io)
+        - Installed app (PWA)
+        - Local development
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or console errors

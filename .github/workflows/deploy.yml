@@ -44,6 +44,38 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # Prove the real deployment works: load it from GitHub Pages, check the service
+  # worker scope and manifest under the repository path, complete onboarding and
+  # reload offline.
+  verify-live:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Wait for the Pages CDN to serve the new build
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS "$PAGE_URL" | grep -q "<title>Ascend</title>"; then echo "Live: $PAGE_URL"; exit 0; fi
+            sleep 10
+          done
+          echo "Site did not come up at $PAGE_URL" >&2; exit 1
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Smoke-test the live site
+        run: npx playwright test
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ needs.deploy.outputs.page_url }}
