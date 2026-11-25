@@ -1,0 +1,32 @@
+/* FullCalendar themed to the Ascend design tokens */
+.ascend-cal .fc {
+  --fc-border-color: var(--line);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--surface-2);
+  --fc-today-bg-color: color-mix(in oklab, var(--accent) 9%, transparent);
+  --fc-event-border-color: transparent;
+  --fc-now-indicator-color: var(--c-crimson);
+  --fc-highlight-color: color-mix(in oklab, var(--accent) 18%, transparent);
+  --fc-list-event-hover-bg-color: var(--surface-2);
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+}
+.ascend-cal .fc .fc-toolbar { display: none; }
+.ascend-cal .fc .fc-col-header-cell-cushion,
+.ascend-cal .fc .fc-daygrid-day-number { color: var(--fg-muted); font-weight: 600; text-decoration: none; padding: 6px 8px; }
+.ascend-cal .fc .fc-col-header-cell { background: var(--surface-2); text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.12em; }
+.ascend-cal .fc .fc-timegrid-slot-label-cushion { color: var(--fg-dim); font-family: var(--font-mono); font-size: 0.68rem; }
+.ascend-cal .fc .fc-event { border-radius: 6px; padding: 1px 4px; font-weight: 600; font-size: 0.74rem; cursor: pointer; }
+.ascend-cal .fc .fc-daygrid-event { white-space: nowrap; overflow: hidden; }
+.ascend-cal .fc .ev-quest { background: color-mix(in oklab, var(--accent) 24%, var(--surface)); color: var(--fg); border-left: 3px solid var(--accent); }
+.ascend-cal .fc .ev-boss { background: color-mix(in oklab, var(--c-crimson) 22%, var(--surface)); border-left: 3px solid var(--c-crimson); color: var(--fg); }
+.ascend-cal .fc .ev-recurring { background: color-mix(in oklab, var(--c-emerald) 16%, var(--surface)); border-left: 3px solid var(--c-emerald); color: var(--fg); }
+.ascend-cal .fc .ev-done { opacity: 0.5; text-decoration: line-through; }
+.ascend-cal .fc .ev-deadline { background: transparent; color: var(--c-gold); border: 1px dashed color-mix(in oklab, var(--c-gold) 60%, transparent); }
+.ascend-cal .fc .ev-block { background: repeating-linear-gradient(135deg, var(--surface-2), var(--surface-2) 6px, var(--surface-3) 6px, var(--surface-3) 12px); color: var(--fg-muted); border-left: 3px solid var(--fg-dim); }
+.ascend-cal .fc .ev-overdue { box-shadow: inset 0 0 0 1px var(--c-crimson); }
+.ascend-cal .fc .fc-list { border-radius: 12px; overflow: hidden; }
+.ascend-cal .fc .fc-list-day-cushion { background: var(--surface-2); }
+.ascend-cal .fc .fc-list-event-title a, .ascend-cal .fc .fc-list-event-time { color: var(--fg); }
+.ascend-cal .fc .fc-scrollgrid { border-radius: 12px; overflow: hidden; }
+.ascend-cal .fc a { color: inherit; }

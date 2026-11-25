@@ -4,13 +4,10 @@ import '@fontsource-variable/cinzel';
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/jetbrains-mono';
 import './styles/index.css';
-
-function Placeholder() {
-  return <main className="atmosphere grid min-h-full place-items-center font-display text-3xl">Ascend</main>;
-}
+import App from './app/App';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Placeholder />
+    <App />
   </StrictMode>,
 );
