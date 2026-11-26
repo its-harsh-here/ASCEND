@@ -3,7 +3,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ───────────────────────────── Design tokens ───────────────────────────── */
-:root {
+/* .theme-dark / .theme-light scope the tokens to one element (Settings → Appearance previews). */
+:root, .theme-dark {
   color-scheme: dark;
   --bg: #07070b;
   --bg-raised: #0c0b12;
@@ -14,14 +15,14 @@
   --line-strong: rgb(255 255 255 / 0.13);
   --fg: #ecebf4;
   --fg-muted: #a3a0b7;
-  --fg-dim: #6f6b85;
+  --fg-dim: #827e95; /* AA 4.5:1 on all surfaces (contrast.test.ts) */
 
   --c-violet: #9b8cff;
-  --c-indigo: #6d73ff;
+  --c-indigo: #7d82ff;
   --c-cyan: #3fd8f0;
   --c-gold: #e9b44c;
   --c-emerald: #3ddc97;
-  --c-crimson: #ef5b67;
+  --c-crimson: #ef5d69;
 
   --accent: var(--c-violet);
   --accent-2: var(--c-indigo);
@@ -37,15 +38,42 @@
   --chart-1: #8270ec;
   --chart-2: #19a8c4;
   --chart-grid: rgb(255 255 255 / 0.06);
+  /* Campaign/accent swatches (src/lib/colors.ts) */
+  --swatch-violet: #9b8cff;
+  --swatch-cyan: #3fd8f0;
+  --swatch-gold: #e9b44c;
+  --swatch-emerald: #3ddc97;
+  --swatch-rose: #f472b6;
+  --swatch-indigo: #6d73ff;
+  /* Surface effects (Phase 1: no colour literals outside this file) */
+  --scrim: rgb(3 3 8 / 0.72);
+  --overlay: rgb(0 0 0 / 0.55);
+  --highlight: rgb(255 255 255 / 0.06);
+  --highlight-strong: rgb(255 255 255 / 0.35);
+  --shine: rgb(255 255 255 / 0.45);
+  --shine-soft: rgb(255 255 255 / 0.05);
+  --shine-gold: rgb(233 180 76 / 0.1);
+  --gold-hi: #f6d389;
+  --gold-lo: #b07a1c;
+  --gold-ink: #1b1305;
+  --fill-emerald-from: #1f9e6c;
+  --fill-cyan-from: #2a8fc9;
+  --fill-crimson-from: #a8303b;
 }
 
 :root[data-accent='cyan'] { --accent: var(--c-cyan); --accent-2: #2aa7c9; }
 :root[data-accent='gold'] { --accent: var(--c-gold); --accent-2: #c98a2a; }
 :root[data-accent='emerald'] { --accent: var(--c-emerald); --accent-2: #24a873; }
 :root[data-accent='rose'] { --accent: #f472b6; --accent-2: #db2777; }
-:root[data-accent='indigo'] { --accent: var(--c-indigo); --accent-2: #4f46e5; }
+:root[data-accent='indigo'] { --accent: var(--c-indigo); --accent-2: #5b53e7; }
 
-:root.light {
+/* Light theme: gradient ends stepped darker so white button labels keep AA 4.5:1 (contrast.test.ts) */
+:root.light[data-accent='cyan'] { --accent-2: #207f99; }
+:root.light[data-accent='gold'] { --accent-2: #9a6a20; }
+:root.light[data-accent='emerald'] { --accent-2: #1c845a; }
+:root.light[data-accent='rose'] { --accent: #b35486; --accent-2: #d42673; }
+
+:root.light, .theme-light {
   color-scheme: light;
   --bg: #f5f3ee;
   --bg-raised: #efece5;
@@ -56,13 +84,14 @@
   --line-strong: rgb(20 16 40 / 0.16);
   --fg: #19162a;
   --fg-muted: #555068;
-  --fg-dim: #8a8599;
-  --c-violet: #6a55e8;
-  --c-indigo: #4f52e0;
-  --c-cyan: #0e8fa8;
-  --c-gold: #b07a12;
-  --c-emerald: #13895a;
-  --c-crimson: #cf2f3d;
+  --fg-dim: #625e6e;
+  /* Light colours stepped toward black just enough for AA text contrast on every surface */
+  --c-violet: #5c49c8;
+  --c-indigo: #494cd0;
+  --c-cyan: #0a6779;
+  --c-gold: #7e570d;
+  --c-emerald: #0f6b46;
+  --c-crimson: #ae2833;
   --accent-fg: #ffffff;
   --glass: rgb(255 255 255 / 0.72);
   --atmos-1: rgb(109 115 255 / 0.08);
@@ -71,6 +100,21 @@
   --chart-1: #6a55e8;
   --chart-2: #0e8fa8;
   --chart-grid: rgb(20 16 40 / 0.07);
+  --swatch-violet: #6853e3;
+  --swatch-cyan: #0b758a;
+  --swatch-gold: #8f630f;
+  --swatch-emerald: #117b51;
+  --swatch-rose: #b35486;
+  --swatch-indigo: #4f52e0;
+  --scrim: rgb(25 22 42 / 0.42);
+  --overlay: rgb(245 243 238 / 0.65);
+  --highlight: rgb(255 255 255 / 0.8);
+  --shine-soft: rgb(255 255 255 / 0.6);
+  --shine-gold: rgb(143 99 15 / 0.12);
+  /* Light gold is darker, so the gold button switches to white ink (contrast.test.ts) */
+  --gold-hi: #a37722;
+  --gold-lo: #6f4c0a;
+  --gold-ink: #ffffff;
 }
 
 @theme inline {

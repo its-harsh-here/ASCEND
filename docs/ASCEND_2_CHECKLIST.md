@@ -15,29 +15,31 @@
 
 ## P1 — Theme completion
 
-- [ ] **P1-01** Create `src/lib/colors.ts` exporting `CAMPAIGN_COLORS` and `ACCENT_SWATCHES`. Replace `CAMPAIGN_HEX` (`src/features/campaigns/CampaignsPage.tsx:13`), `COLOR_HEX` (`src/features/campaigns/wizard/CampaignWizard.tsx:48`) and `ACCENT_HEX` (`src/features/settings/SettingsPage.tsx:32`). Values come from CSS vars `--campaign-<name>`, defined per theme in `index.css`.
-- [ ] **P1-02** Add these tokens to `src/styles/index.css` for `:root` and `:root.light`: `--scrim --overlay --highlight --input-bg --input-border --focus-ring --sidebar --xp --xp-glow --rarity-{common,rare,epic,legendary} --quest-{main,side,daily,weekly,boss,legendary} --success --warning --danger --info --c-bronze --c-silver --fill-{accent,emerald,gold,cyan,crimson}-{from,to}`.
-- [ ] **P1-03** Replace the color literals listed in UI/UX §4.2:
+- [x] **P1-01** Create `src/lib/colors.ts` exporting `CAMPAIGN_COLORS` and `ACCENT_SWATCHES`. Replace `CAMPAIGN_HEX` (`src/features/campaigns/CampaignsPage.tsx:13`), `COLOR_HEX` (`src/features/campaigns/wizard/CampaignWizard.tsx:48`) and `ACCENT_HEX` (`src/features/settings/SettingsPage.tsx:32`). Values come from CSS vars `--campaign-<name>`, defined per theme in `index.css`.
+- [x] **P1-02** Add these tokens to `src/styles/index.css` for `:root` and `:root.light`: `--scrim --overlay --highlight --input-bg --input-border --focus-ring --sidebar --xp --xp-glow --rarity-{common,rare,epic,legendary} --quest-{main,side,daily,weekly,boss,legendary} --success --warning --danger --info --c-bronze --c-silver --fill-{accent,emerald,gold,cyan,crimson}-{from,to}`.
+- [x] **P1-03** Replace the color literals listed in UI/UX §4.2:
   - `primitives.tsx` (ProgressBar fills, Switch/Tabs highlights)
   - `button.tsx` (primary/gold variants)
   - `dialog.tsx`, `CommandPalette.tsx`, `Celebrations.tsx` (scrims)
   - `Shell.tsx`, `widgets.tsx`, `AchievementsPage.tsx`
   - `SkillTreePage.tsx:150` (MiniMap mask)
   - `App.tsx:95` (`theme-color`: read `getComputedStyle(root).getPropertyValue('--bg')`)
-- [ ] **P1-04** Create `scripts/check-color-literals.mjs`. It fails on `#rrggbb` and `rgb(` in `src/**/*.tsx` except `src/components/game/Avatar.tsx`. Wire it as `npm run lint:colors` in CI.
-- [ ] **P1-05** Create `src/hooks/useResolvedTheme.ts`, which returns `'light' | 'dark'` from settings and `matchMedia`. Use it in `SkillTreePage.tsx:137` `colorMode`.
-- [ ] **P1-06** In `updateSettings` (`src/services/core.ts`), after a successful put, write `localStorage['ascend:theme']` and `['ascend:accent']` (try/catch).
-- [ ] **P1-07** In `index.html`, add an inline `<script>` in `<head>` before CSS. It reads those keys plus `prefers-color-scheme`, sets the `light`/`dark` class and `data-accent` on `<html>`, and sets the `color-scheme` style. Remove the hardcoded `class="dark"`. Record its SHA-256 for the future CSP.
-- [ ] **P1-08** Add Appearance preview tiles (Light/Dark/System) in `SettingsPage.tsx`, rendered with scoped `data-theme-preview` classes that set the tokens locally.
-- [ ] **P1-09** Add a theme quick toggle to the sidebar avatar menu (`Shell.tsx`). It cycles light → dark → system, with an `aria-label` stating the current mode.
-- [ ] **P1-10** Audit `calendar.css` in light mode: check event text contrast on `ev-quest`/`ev-boss`/`ev-recurring` backgrounds, and adjust the mixes per theme.
-- [ ] **P1-11** Create `src/styles/contrast.test.ts`. Parse the token table, compute WCAG ratios, and assert text ≥ 4.5 and UI ≥ 3 for both themes.
-- [ ] **P1-12** Create `e2e/theme.spec.ts`:
+- [x] **P1-04** Create `scripts/check-color-literals.mjs`. It fails on `#rrggbb` and `rgb(` in `src/**/*.tsx` except `src/components/game/Avatar.tsx`. Wire it as `npm run lint:colors` in CI.
+- [x] **P1-05** Create `src/hooks/useResolvedTheme.ts`, which returns `'light' | 'dark'` from settings and `matchMedia`. Use it in `SkillTreePage.tsx:137` `colorMode`.
+- [x] **P1-06** In `updateSettings` (`src/services/core.ts`), after a successful put, write `localStorage['ascend:theme']` and `['ascend:accent']` (try/catch).
+- [x] **P1-07** In `index.html`, add an inline `<script>` in `<head>` before CSS. It reads those keys plus `prefers-color-scheme`, sets the `light`/`dark` class and `data-accent` on `<html>`, and sets the `color-scheme` style. Remove the hardcoded `class="dark"`. Record its SHA-256 for the future CSP.
+- [x] **P1-08** Add Appearance preview tiles (Light/Dark/System) in `SettingsPage.tsx`, rendered with scoped `data-theme-preview` classes that set the tokens locally.
+- [x] **P1-09** Add a theme quick toggle to the sidebar avatar menu (`Shell.tsx`). It cycles light → dark → system, with an `aria-label` stating the current mode.
+- [x] **P1-10** Audit `calendar.css` in light mode: check event text contrast on `ev-quest`/`ev-boss`/`ev-recurring` backgrounds, and adjust the mixes per theme.
+- [x] **P1-11** Create `src/styles/contrast.test.ts`. Parse the token table, compute WCAG ratios, and assert text ≥ 4.5 and UI ≥ 3 for both themes.
+- [x] **P1-12** Create `e2e/theme.spec.ts`:
   - no-flash: `addInitScript` records `documentElement.className` at `DOMContentLoaded`
   - `emulateMedia` system switching
   - axe on 14 routes × 2 themes (add devDependency `@axe-core/playwright` after approval)
   - full-page screenshots attached as artifacts
-- [ ] **P1 Exit:** literal check passes; contrast test passes; axe 0 serious/critical; Lighthouse a11y ≥ 98 in both themes (measured; record the numbers); all existing tests green.
+- [x] **P1 Exit:** literal check passes; contrast test passes; axe 0 serious/critical; Lighthouse a11y ≥ 98 in both themes (measured; record the numbers); all existing tests green.
+
+> Done 2026-11-26. Where the implementation differs from the items above (mirror location, token subset, toggle placement, 15 screens), see *Phase 1 results* in ASCEND_2_DECISIONS.md.
 
 ## P2 — Auth and identity
 

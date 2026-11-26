@@ -64,7 +64,7 @@ function AchievementGrid() {
           return (
             <motion.div key={a.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.025, 0.5) }}
               className={cn('panel relative flex gap-4 overflow-hidden p-4', !at && 'opacity-70')} style={at ? { borderColor: `color-mix(in oklab, ${color} 40%, transparent)` } : undefined} data-testid="achievement-card">
-              {at && a.rarity === 'legendary' && <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(233_180_76/0.1),transparent)]" />}
+              {at && a.rarity === 'legendary' && <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--shine-gold),transparent)]" />}
               <div className="relative grid size-14 shrink-0 rotate-45 place-items-center rounded-[14px] border-2" style={{ borderColor: at ? color : 'var(--line-strong)', boxShadow: at ? `0 0 24px -6px ${color}` : undefined, background: at ? `color-mix(in oklab, ${color} 10%, var(--surface))` : 'var(--surface-2)' }}>
                 <span className="-rotate-45" style={{ color: at ? color : 'var(--fg-dim)' }}>{at ? <Icon name={a.icon} className="size-6" /> : <Lock className="size-5" />}</span>
               </div>

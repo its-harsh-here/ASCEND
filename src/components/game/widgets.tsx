@@ -31,7 +31,7 @@ export function XpBar({ into, needed, level, compact }: { into: number; needed: 
           animate={{ width: `${pct * 100}%` }}
           transition={{ type: 'spring', stiffness: 70, damping: 18 }}
         >
-          <span className="absolute inset-y-0 w-1/3 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.5),transparent)]" />
+          <span className="absolute inset-y-0 w-1/3 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--shine),transparent)]" />
           <span className="absolute top-0 right-0 bottom-0 w-1.5 rounded-full bg-white/80 blur-[2px]" />
         </motion.div>
         {[0.25, 0.5, 0.75].map((t) => (
@@ -81,7 +81,7 @@ const HEAT_BG = [
 export function Heatmap({ cols, cell = 12, gap = 3 }: { cols: HeatCell[][]; cell?: number; gap?: number }) {
   const days = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex gap-2 overflow-x-auto pb-1" tabIndex={0} role="region" aria-label="Activity heatmap (scrollable)">
       <div className="flex flex-col pt-[18px] text-[0.6rem] text-fg-dim" style={{ gap }}>
         {days.map((d, i) => (
           <span key={i} style={{ height: cell, lineHeight: `${cell}px` }}>

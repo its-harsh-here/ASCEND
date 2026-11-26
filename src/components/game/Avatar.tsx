@@ -2,6 +2,7 @@ import { Compass, Cpu, Feather, Flame, Moon, Shield, Sword, Wand2, type LucideIc
 import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
+// color-literals: allow — avatar crests are artwork with fixed hues, identical in every theme.
 /** Original emblem avatars: an icon set inside a faceted hexagonal crest. */
 export const AVATARS: { id: string; name: string; icon: LucideIcon; hue: [string, string] }[] = [
   { id: 'sigil-blade', name: 'Vanguard', icon: Sword, hue: ['#9b8cff', '#4f46e5'] },

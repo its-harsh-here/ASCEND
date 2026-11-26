@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Badge, PageHeader, Panel, ProgressBar, ProgressRing } from '@/components/ui/primitives';
 import { SKILL_BRANCHES, SKILL_BY_ID, SKILL_RANKS, SKILLS, computeSkillProgress, type SkillProgress } from '@/domain/skills';
-import { useQuests, useSettings, useXpEvents } from '@/hooks/data';
+import { useQuests, useXpEvents } from '@/hooks/data';
+import { useResolvedTheme } from '@/lib/theme';
 import { cn, formatNumber, orEmpty } from '@/lib/utils';
 import { useUI } from '@/store/ui';
 
@@ -39,7 +40,7 @@ function SkillNodeView({ data }: NodeProps<SkillNode>) {
           <div className="text-[0.66rem] text-fg-dim">{locked ? 'Locked' : `${p.rankName} · rank ${p.rank}`}</div>
         </div>
       </div>
-      <div className="mt-2 flex gap-[3px]" aria-label={`Rank ${p.rank} of 5`}>
+      <div className="mt-2 flex gap-[3px]" role="img" aria-label={`Rank ${p.rank} of 5`}>
         {[1, 2, 3, 4, 5].map((r) => <span key={r} className="h-1 flex-1 rounded-full" style={{ background: r <= p.rank ? color : 'var(--surface-3)' }} />)}
       </div>
       <div className="mt-1.5 font-num text-[0.66rem] text-fg-muted">{formatNumber(p.xp)} XP{p.nextRankXp ? ` / ${formatNumber(p.nextRankXp)}` : ' · max'}</div>
@@ -53,7 +54,7 @@ const nodeTypes = { skill: SkillNodeView };
 export default function SkillTreePage() {
   const events = useXpEvents();
   const quests = orEmpty(useQuests());
-  const settings = useSettings();
+  const resolvedTheme = useResolvedTheme();
   const openEditor = useUI((s) => s.openEditor);
   const [selected, setSelected] = useState<string | null>(null);
   const progress = useMemo(() => computeSkillProgress(events ?? []), [events]);
@@ -134,7 +135,7 @@ export default function SkillTreePage() {
               nodes={nodes}
               edges={edges}
               nodeTypes={nodeTypes}
-              colorMode={settings?.theme === 'light' ? 'light' : 'dark'}
+              colorMode={resolvedTheme}
               fitView
               // Open on the first row of branches at a readable zoom; the second row is a pan away.
               fitViewOptions={{ padding: 0.06, nodes: firstRowIds }}
@@ -147,7 +148,7 @@ export default function SkillTreePage() {
             >
               <Background gap={28} size={1} color="var(--line-strong)" />
               <Controls showInteractive={false} />
-              <MiniMap pannable zoomable nodeColor={(n) => ((n.data as SkillNodeData)?.progress?.rank ? (n.data as SkillNodeData).color : 'var(--surface-3)')} maskColor="rgb(0 0 0 / 0.55)" style={{ background: 'var(--surface)' }} />
+              <MiniMap pannable zoomable nodeColor={(n) => ((n.data as SkillNodeData)?.progress?.rank ? (n.data as SkillNodeData).color : 'var(--surface-3)')} maskColor="var(--overlay)" style={{ background: 'var(--surface)' }} />
             </ReactFlow>
           )}
         </Panel>

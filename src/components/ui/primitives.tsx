@@ -5,7 +5,9 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { Check } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
+  createContext,
   forwardRef,
+  useContext,
   type ComponentPropsWithoutRef,
   type HTMLAttributes,
   type InputHTMLAttributes,
@@ -56,16 +58,33 @@ export function PanelHeader({
 }
 
 /* ─────────── Form controls ─────────── */
+
+/**
+ * A row that shows its label beside (not around) its control provides the label/hint ids here, so the
+ * control is still named for assistive tech. Explicit aria-label / aria-labelledby / <label for> always win.
+ */
+export const ControlLabelContext = createContext<{ labelId?: string; hintId?: string }>({});
+
+type Named = { id?: string; 'aria-label'?: string; 'aria-labelledby'?: string; 'aria-describedby'?: string };
+function useLabelling(props: Named): Named {
+  const { labelId, hintId } = useContext(ControlLabelContext);
+  if (props['aria-label'] || props['aria-labelledby']) return {};
+  return {
+    ...(labelId ? { 'aria-labelledby': labelId } : {}),
+    ...(hintId && !props['aria-describedby'] ? { 'aria-describedby': hintId } : {}),
+  };
+}
+
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input(
   { className, ...props },
   ref,
 ) {
-  return <input ref={ref} className={cn('field', className)} {...props} />;
+  return <input ref={ref} className={cn('field', className)} {...useLabelling(props)} {...props} />;
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(
   function Textarea({ className, ...props }, ref) {
-    return <textarea ref={ref} className={cn('field min-h-[88px] resize-y', className)} {...props} />;
+    return <textarea ref={ref} className={cn('field min-h-[88px] resize-y', className)} {...useLabelling(props)} {...props} />;
   },
 );
 
@@ -73,7 +92,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   { className, ...props },
   ref,
 ) {
-  return <select ref={ref} className={cn('field cursor-pointer', className)} {...props} />;
+  return <select ref={ref} className={cn('field cursor-pointer', className)} {...useLabelling(props)} {...props} />;
 });
 
 export function Label({ className, ...props }: LabelHTMLAttributes<HTMLLabelElement>) {
@@ -127,9 +146,11 @@ export const Checkbox = forwardRef<
 
 export const Switch = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>>(
   function Switch({ className, ...props }, ref) {
+    const labelling = useLabelling(props);
     return (
       <SwitchPrimitive.Root
         ref={ref}
+        {...labelling}
         className={cn(
           'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-line-strong bg-surface-3 transition-colors data-[state=checked]:border-transparent data-[state=checked]:bg-accent',
           className,
@@ -203,10 +224,10 @@ export function ProgressBar({
   const pct = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0)) * 100;
   const fills: Record<string, string> = {
     accent: 'linear-gradient(90deg, var(--accent-2), var(--accent))',
-    emerald: 'linear-gradient(90deg, #1f9e6c, var(--c-emerald))',
-    gold: 'linear-gradient(90deg, #b07a1c, var(--c-gold), #f6d389)',
-    cyan: 'linear-gradient(90deg, #2a8fc9, var(--c-cyan))',
-    crimson: 'linear-gradient(90deg, #a8303b, var(--c-crimson))',
+    emerald: 'linear-gradient(90deg, var(--fill-emerald-from), var(--c-emerald))',
+    gold: 'linear-gradient(90deg, var(--gold-lo), var(--c-gold), var(--gold-hi))',
+    cyan: 'linear-gradient(90deg, var(--fill-cyan-from), var(--c-cyan))',
+    crimson: 'linear-gradient(90deg, var(--fill-crimson-from), var(--c-crimson))',
   };
   return (
     <div
@@ -226,7 +247,7 @@ export function ProgressBar({
         transition={{ type: 'spring', stiffness: 90, damping: 20 }}
       >
         {shimmer && pct > 0 && (
-          <span className="absolute inset-y-0 w-1/3 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.45),transparent)]" />
+          <span className="absolute inset-y-0 w-1/3 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--shine),transparent)]" />
         )}
       </motion.div>
     </div>
@@ -317,7 +338,7 @@ export function TabsTrigger({ className, ...props }: ComponentPropsWithoutRef<ty
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'inline-flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[0.8rem] font-semibold text-fg-muted transition-colors hover:text-fg data-[state=active]:bg-surface-3 data-[state=active]:text-fg data-[state=active]:shadow-[inset_0_1px_0_rgb(255_255_255/0.06)] [&_svg]:size-3.5',
+        'inline-flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[0.8rem] font-semibold text-fg-muted transition-colors hover:text-fg data-[state=active]:bg-surface-3 data-[state=active]:text-fg data-[state=active]:shadow-[inset_0_1px_0_var(--highlight)] [&_svg]:size-3.5',
         className,
       )}
       {...props}
@@ -353,7 +374,7 @@ export function Segmented<T extends string>({
           className={cn(
             'rounded-[8px] px-3 font-semibold transition-colors [&_svg]:size-3.5',
             size === 'sm' ? 'h-7 text-xs' : 'h-8 text-[0.8rem]',
-            value === o.value ? 'bg-surface-3 text-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.06)]' : 'text-fg-muted hover:text-fg',
+            value === o.value ? 'bg-surface-3 text-fg shadow-[inset_0_1px_0_var(--highlight)]' : 'text-fg-muted hover:text-fg',
           )}
         >
           {o.label}
@@ -394,7 +415,7 @@ export function EmptyState({
 
 export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('relative overflow-hidden rounded-lg bg-surface-2', className)}>
-    <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.04),transparent)]" />
+    <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--shine-soft),transparent)]" />
   </div>;
 }
 

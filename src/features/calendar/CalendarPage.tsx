@@ -148,6 +148,8 @@ export default function CalendarPage() {
           ref={cal}
           plugins={[dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin]}
           initialView={view}
+          // "+N more" is an <a> without href that opens a popover: expose it as the button it is (axe aria-allowed-attr).
+          moreLinkDidMount={({ el }) => el.setAttribute('role', 'button')}
           headerToolbar={false}
           height="auto"
           firstDay={1}

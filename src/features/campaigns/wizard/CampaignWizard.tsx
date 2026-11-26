@@ -20,6 +20,7 @@ import { activatePlan } from '@/services/campaigns';
 import { commitmentsExcluding } from '@/services/campaigns';
 import { useUI } from '@/store/ui';
 import { PlanReview } from './PlanReview';
+import { swatch } from '@/lib/colors';
 
 const STEPS = ['Name', 'Objective', 'Dates', 'Time', 'Level', 'Goals', 'Generate', 'Review', 'Activate'];
 
@@ -45,7 +46,6 @@ function inputKey(f: WizardForm): string {
   return JSON.stringify([f.startDate, f.endDate, f.hoursPerDay, f.workdays, f.skillLevel, f.goals]);
 }
 
-const COLOR_HEX: Record<string, string> = { violet: '#9b8cff', cyan: '#3fd8f0', gold: '#e9b44c', emerald: '#3ddc97', rose: '#f472b6', indigo: '#6d73ff' };
 
 export default function CampaignWizard() {
   const settings = useSettings();
@@ -187,7 +187,7 @@ export default function CampaignWizard() {
               <Label className="mt-6">Banner color</Label>
               <div className="flex gap-2">
                 {ACCENTS.map((c) => (
-                  <button key={c} onClick={() => set({ color: c })} aria-label={c} aria-pressed={form.color === c} className={cn('size-9 rotate-45 rounded-lg border-2 transition', form.color === c ? 'scale-110 border-fg' : 'border-transparent')} style={{ background: COLOR_HEX[c] }} />
+                  <button key={c} onClick={() => set({ color: c })} aria-label={c} aria-pressed={form.color === c} className={cn('size-9 rotate-45 rounded-lg border-2 transition', form.color === c ? 'scale-110 border-fg' : 'border-transparent')} style={{ background: swatch(c) }} />
                 ))}
               </div>
               <div className="mt-6 flex flex-wrap gap-2">
@@ -283,8 +283,8 @@ export default function CampaignWizard() {
 
           {step === 8 && plan && (
             <Panel runes className="p-6 text-center md:p-10">
-              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mx-auto grid size-20 rotate-45 place-items-center rounded-2xl border-2" style={{ borderColor: COLOR_HEX[form.color], boxShadow: `0 0 40px -8px ${COLOR_HEX[form.color]}` }}>
-                <Flag className="size-8 -rotate-45" style={{ color: COLOR_HEX[form.color] }} />
+              <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mx-auto grid size-20 rotate-45 place-items-center rounded-2xl border-2" style={{ borderColor: swatch(form.color), boxShadow: `0 0 40px -8px ${swatch(form.color)}` }}>
+                <Flag className="size-8 -rotate-45" style={{ color: swatch(form.color) }} />
               </motion.div>
               <h2 className="mt-8 font-display text-2xl font-semibold">{form.name}</h2>
               <p className="mt-2 text-sm text-fg-muted">{formatDateKey(form.startDate, 'MMM d')} → {formatDateKey(form.endDate, 'MMM d, yyyy')} · {plan.questlines.length} questlines · {plan.quests.length} quests · {plan.recurring.filter((r) => r.enabled).length} recurring</p>

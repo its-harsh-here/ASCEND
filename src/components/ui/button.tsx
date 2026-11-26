@@ -9,12 +9,12 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[linear-gradient(180deg,color-mix(in_oklab,var(--accent)_92%,white),var(--accent-2))] text-accent-fg shadow-[0_8px_24px_-10px_var(--accent),inset_0_1px_0_rgb(255_255_255/0.35)] hover:brightness-110',
+          'bg-[linear-gradient(180deg,color-mix(in_oklab,var(--accent)_92%,white),var(--accent-2))] text-accent-fg shadow-[0_8px_24px_-10px_var(--accent),inset_0_1px_0_var(--highlight-strong)] hover:brightness-110',
         secondary: 'border border-line-strong bg-surface-2 text-fg hover:border-[color-mix(in_oklab,var(--accent)_35%,var(--line-strong))] hover:bg-surface-3',
         ghost: 'text-fg-muted hover:bg-surface-2 hover:text-fg',
         outline: 'border border-[color-mix(in_oklab,var(--accent)_45%,transparent)] text-accent hover:bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]',
         danger: 'border border-[color-mix(in_oklab,var(--c-crimson)_40%,transparent)] bg-[color-mix(in_oklab,var(--c-crimson)_14%,transparent)] text-crimson hover:bg-[color-mix(in_oklab,var(--c-crimson)_22%,transparent)]',
-        gold: 'bg-[linear-gradient(180deg,#f6d389,var(--c-gold)_55%,#b07a1c)] text-[#1b1305] shadow-[0_8px_24px_-10px_var(--c-gold)] hover:brightness-110',
+        gold: 'bg-[linear-gradient(180deg,var(--gold-hi),var(--c-gold)_55%,var(--gold-lo))] text-[var(--gold-ink)] shadow-[0_8px_24px_-10px_var(--c-gold)] hover:brightness-110',
         success: 'bg-[color-mix(in_oklab,var(--c-emerald)_16%,transparent)] text-emerald border border-[color-mix(in_oklab,var(--c-emerald)_40%,transparent)] hover:bg-[color-mix(in_oklab,var(--c-emerald)_24%,transparent)]',
       },
       size: {

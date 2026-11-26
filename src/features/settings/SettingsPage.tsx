@@ -2,12 +2,12 @@ import {
   AlertTriangle, Bell, Brain, Database, Download, FileJson, FileSpreadsheet, Gamepad2, HardDrive, LayoutDashboard, Loader2, Palette, RefreshCcw,
   ShieldCheck, Timer, Trash2, Upload, User, Zap,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { getProvider, loadWebLLM, webgpuSupported, type AIStatus } from '@/ai/providers';
 import { AVATARS, Avatar } from '@/components/game/Avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { Badge, Field, Input, PageHeader, Panel, ProgressBar, Segmented, Select, Switch } from '@/components/ui/primitives';
+import { Badge, ControlLabelContext, Field, Input, PageHeader, Panel, ProgressBar, Segmented, Select, Switch } from '@/components/ui/primitives';
 import { TABLE_NAMES, db, isDemoMode, setDemoMode } from '@/db/schema';
 import { ACCENTS, DASHBOARD_WIDGETS, DEFAULT_SETTINGS, DIFFICULTIES, DIFFICULTY_LABEL, type Settings } from '@/domain/types';
 import { useCampaigns, useSettings, useToday } from '@/hooks/data';
@@ -16,6 +16,8 @@ import { cn, orEmpty } from '@/lib/utils';
 import { checkIntegrity, downloadBackup, downloadQuestCsv, restoreBackup, validateBackup, type BackupFile, type IntegrityReport } from '@/services/backup';
 import { requestPersistentStorage, storageEstimate, updateSettings } from '@/services/core';
 import { useUI } from '@/store/ui';
+import { swatch } from '@/lib/colors';
+import { ThemePicker } from './ThemePicker';
 
 const SECTIONS = [
   { id: 'profile', label: 'Profile', icon: <User /> },
@@ -29,7 +31,6 @@ const SECTIONS = [
   { id: 'ai', label: 'Local AI', icon: <Brain /> },
 ];
 
-const ACCENT_HEX: Record<string, string> = { violet: '#9b8cff', cyan: '#3fd8f0', gold: '#e9b44c', emerald: '#3ddc97', rose: '#f472b6', indigo: '#6d73ff' };
 const WIDGET_LABEL: Record<string, string> = { character: 'Character progression', briefing: 'Daily briefing', quests: "Today's quests", campaigns: 'Campaign progress', timeline: 'Daily timeline', insights: 'Productivity insights', heatmap: 'Activity heatmap' };
 
 function Section({ id, title, description, children }: { id: string; title: string; description?: string; children: ReactNode }) {
@@ -43,13 +44,17 @@ function Section({ id, title, description, children }: { id: string; title: stri
 }
 
 function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
+  const id = useId();
+  const ctx = useMemo(() => ({ labelId: `${id}-label`, hintId: hint ? `${id}-hint` : undefined }), [id, !!hint]); // eslint-disable-line react-hooks/exhaustive-deps -- only presence of the hint matters
   return (
     <div className="flex flex-col gap-2 border-b border-line pb-4 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <div className="text-sm font-semibold">{label}</div>
-        {hint && <div className="text-xs text-fg-muted">{hint}</div>}
+        <div id={ctx.labelId} className="text-sm font-semibold">{label}</div>
+        {hint && <div id={ctx.hintId} className="text-xs text-fg-muted">{hint}</div>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0">
+        <ControlLabelContext.Provider value={ctx}>{children}</ControlLabelContext.Provider>
+      </div>
     </div>
   );
 }
@@ -79,9 +84,9 @@ export default function SettingsPage() {
           </Section>
 
           <Section id="appearance" title="Appearance">
-            <Row label="Theme" hint="Obsidian dark is the primary experience."><Segmented ariaLabel="Theme" value={s.theme} onChange={(v) => set({ theme: v })} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'System' }]} /></Row>
+            <Row label="Theme" hint="“System” follows your device and switches automatically."><ThemePicker value={s.theme} accent={s.accent} onChange={(v) => set({ theme: v })} /></Row>
             <Row label="Accent color">
-              <div className="flex gap-2">{ACCENTS.map((a) => <button key={a} onClick={() => set({ accent: a })} aria-label={a} aria-pressed={s.accent === a} className={cn('size-8 rotate-45 rounded-md border-2 transition', s.accent === a ? 'scale-110 border-fg' : 'border-transparent')} style={{ background: ACCENT_HEX[a] }} />)}</div>
+              <div className="flex gap-2">{ACCENTS.map((a) => <button key={a} onClick={() => set({ accent: a })} aria-label={a} aria-pressed={s.accent === a} className={cn('size-8 rotate-45 rounded-md border-2 transition', s.accent === a ? 'scale-110 border-fg' : 'border-transparent')} style={{ background: swatch(a) }} />)}</div>
             </Row>
             <Row label="Motion" hint="Reduce animations. “System” follows your OS preference."><Segmented ariaLabel="Motion" value={s.reducedMotion} onChange={(v) => set({ reducedMotion: v })} options={[{ value: 'system', label: 'System' }, { value: 'reduce', label: 'Reduced' }, { value: 'full', label: 'Full' }]} /></Row>
           </Section>

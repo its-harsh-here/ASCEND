@@ -35,7 +35,7 @@ export function Dialog({
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay asChild forceMount>
               <motion.div
-                className="fixed inset-0 z-50 bg-[rgb(3_3_8/0.72)] backdrop-blur-[3px]"
+                className="fixed inset-0 z-50 bg-[var(--scrim)] backdrop-blur-[3px]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
