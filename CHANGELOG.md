@@ -9,6 +9,18 @@ All notable changes to this project are documented here. The format follows [Kee
 - The saved theme is applied before the first paint, so reloads no longer flash dark in light mode. "System" follows the OS live.
 - Accessibility checks in CI: a WCAG contrast test for every token, axe on all screens in both themes, and a colour-literal lint (`npm run lint:colors`).
 
+- Accounts (off by default, behind `VITE_ENABLE_ACCOUNTS`):
+  - sign in with Google, or continue as a guest
+  - a separate on-device journal per account
+  - a username claim
+  - Settings → Account: sign out, and delete the account after a fresh Google sign-in
+- Supabase scaffolding:
+  - the identity schema, with Row Level Security and RPC-only writes
+  - a `delete-account` Edge Function
+  - a manual migration workflow
+  - CI end-to-end tests against a local Supabase stack
+- A bundle check that fails the build if a privileged Supabase key ever ships.
+
 ### Fixed
 - Settings controls are now named for screen readers.
 - Light theme: calendar event text was white on a light background.

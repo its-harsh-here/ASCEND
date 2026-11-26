@@ -230,3 +230,37 @@ This can't run in CI or this sandbox: it needs real Google consent from a person
 - axe (WCAG 2.0/2.1 A + AA, *all* impacts, not only serious/critical): **0 violations on 15 screens × 2 themes**. That is the 14 routes plus a campaign's detail page, with a full-page screenshot attached per screen.
 - Lighthouse 12.6.1 accessibility, desktop, demo data: **100 on all 7 sampled screens in both themes** (`/`, `/today`, `/campaigns`, `/calendar`, `/skills`, `/analytics`, `/settings`).
 - Unit tests: 158/158. e2e: 8/8 (4 existing journeys + 4 theme specs).
+
+## Phase 2 results — auth and identity (2026-11-26)
+
+**Status:** built and tested **behind `VITE_ENABLE_ACCOUNTS` (off)**, so the live site is unchanged. The owner deferred the Google OAuth client and the Supabase Auth settings (OPERATIONS §2), so the live Google round-trip (P0-02) is still unverified. Everything after the Google redirect is tested end to end against a local Supabase stack in CI.
+
+**Where the plan changed, and why:**
+
+- **Delete-account freshness (P2-11)** uses the JWT `amr[].timestamp`, the time of the original sign-in, not `iat`. Every hourly token refresh resets `iat`, so an `iat` check would accept a session that last saw Google weeks ago. The check lives in `supabase/functions/delete-account/freshness.ts` and is unit-tested.
+- **Edge Function has no npm dependencies.** It makes two `fetch` calls to the Auth REST API (`GET /auth/v1/user`, `DELETE /auth/v1/admin/users/:id`) instead of importing supabase-js, so no third-party code ever holds the service-role key. It also cold-starts faster. Verified locally: no token → 401; fresh session → 204, auth user gone (404), profile removed by cascade.
+- **`main.tsx` imports the app dynamically,** after `handleOAuthCallback()`. The Dexie `db` instance is created when `schema.ts` is first imported, so the callback must pick the account database first. Selection lives in the Dexie-free `src/db/accounts.ts`, which also rejects malformed stored ids, so no arbitrary database names.
+- **The Gate shows only on a first run** (not onboarded, no session, no earlier guest choice). Existing 1.0 guests never see it; they sign in from Settings → Account.
+- **Username claim (P2-07/P2-09)** is a screen before onboarding rather than an extra onboarding step, so the 1.0 onboarding stays byte-for-byte the same for guests. It can be skipped ("Choose later" → Settings → Account).
+- **profiles columns (P2-05):** the Phase 2 subset plus `leaderboard_opt_in` (default `false`), which the claim form needs. `avatar_id` is a foreign key to `private.avatar_catalog`. A `BEFORE` trigger enforces reserved names and display-name cleaning even for writes made directly as the table owner (dashboard). `check_username_available` and `claim_username` share one rate-limit bucket (30/min).
+- **supabase-js (2.119.0) is kept out of the service-worker precache** (`globIgnores`), so guests never download it. It is cached on first use (`CacheFirst`), so signed-in users still boot offline. All Supabase API traffic is `NetworkOnly`.
+- **The dist secrets check (P2-13)** decodes every JWT in `dist/` and fails on `role: service_role`, and fails on any `sb_secret_…` key. A plain `grep service_role` can't see inside base64. Proven by planting the local demo service key: the check fails.
+- **Accounts are disabled in demo mode,** whose database is sample data.
+- **No Google logo on the button** for now: the colour-literal gate forbids its fixed brand colours. Before turning accounts on, the button should follow Google's sign-in branding guidelines, using the official asset under a documented exception.
+- **Deferred to P3:** "remove this account's journal from this device" on sign-out. It needs the outbox count to warn about unsynced changes. Signing out keeps the account database for next time; deleting the account removes it.
+- **New workflow:** `supabase-deploy.yml` (manual; dry run by default) applies migrations and deploys the function. `deploy.yml` passes the three `VITE_*` repository variables.
+
+**Exit measurements:**
+
+- pgTAP: **37/37**: smoke (3) + identity (34). The identity tests try to break the rules: RLS isolation, no direct writes, anon locked out, helpers not callable, reserved names, case-insensitive takeover, a second claim, rate limit at call 31, a trigger bypass as the owner, cascade on delete.
+- Accounts E2E (`e2e/auth.spec.ts`, local stack): **6/6**:
+  - Gate, plus offline disabling Google
+  - callback `error=access_denied` and an invalid code, with the URL cleaned
+  - guest → session → account database → claim → onboarding → reload → Settings → sign out → guest journal intact
+  - username taken (other case)
+  - delete account: server and device
+  - a session that ended elsewhere → guest + notice
+
+  axe is clean on the Gate, the claim screen and Settings → Account.
+- 1.0 journeys: **4/4 on the default build and 4/4 on the accounts build.**
+- Unit: **185/185**: account database selection (8), callback (6), config, username rules and freshness (13).

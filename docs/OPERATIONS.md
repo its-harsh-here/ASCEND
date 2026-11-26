@@ -16,7 +16,7 @@ Setup and operating procedures for the ASCEND 2.0 cloud features. Only the proje
 
 ---
 
-## 1. Public Supabase configuration (needed for Phase 2)
+## 1. Public Supabase configuration (needed for Phase 2) — ✅ done 2026-11-26
 
 1. Supabase dashboard → **Project Settings → API Keys**. Copy the **anon / publishable** key. It is public by design: Row Level Security protects data, not this key.
 2. GitHub → repository **Settings → Secrets and variables → Actions → Variables** tab → **New repository variable**:
@@ -69,7 +69,24 @@ Production migrations run only from a manually triggered workflow, never on ever
 | `SUPABASE_ACCESS_TOKEN` | https://supabase.com/dashboard/account/tokens → Generate new token |
 | `SUPABASE_DB_PASSWORD` | the database password you set when creating the project (Project Settings → Database to reset it) |
 
-## 4. Backups (Phase 3, owner-approved)
+And one more **variable** (not a secret): `SUPABASE_PROJECT_REF` = `elzeoihdahambhqbfveh`.
+
+Then: GitHub → **Actions → "Supabase — apply migrations and functions" → Run workflow**.
+- First run with **Apply** unchecked: a dry run that only lists the pending migrations.
+- Then run again with **Apply** checked: it applies `supabase/migrations/*` and deploys the `delete-account` Edge Function.
+
+## 4. Turning accounts on (Phase 2 — after §2 and §3)
+
+Accounts ship **off**. A build without the flag is exactly the guest-only app, so nothing changes for anyone until you do this:
+
+1. Complete §2 (Google + Supabase Auth settings) and §3 (migrations applied).
+2. Add the repository **variable** `VITE_ENABLE_ACCOUNTS` = `true`.
+3. Actions → **Deploy to GitHub Pages → Run workflow** (or merge any PR).
+4. On the live site: Settings → Account → **Continue with Google**. You should come back signed in, at "Choose your username".
+
+To turn accounts off again, delete the variable (or set it to `false`) and redeploy. Guest data is never touched: guests keep the 1.0 database `ascend`, and each account gets its own `ascend-u-<id>` database on the device.
+
+## 5. Backups (Phase 3, owner-approved)
 
 The free plan has no automatic backups. A nightly workflow will `pg_dump` the database, encrypt it with [age](https://age-encryption.org), and keep it as a private Actions artifact for 90 days.
 
@@ -103,18 +120,31 @@ The free plan has no automatic backups. A nightly workflow will `pg_dump` the da
 
 4. Spot-check row counts.
 
-## 5. Keep-alive (owner-approved)
+## 6. Keep-alive (owner-approved)
 
 Free projects pause after 7 days without activity. A weekly workflow calls a read-only `health()` RPC with the public anon key. If the project is paused anyway, resume it from the Supabase dashboard. The app keeps working offline from IndexedDB in the meantime.
 
-## 6. Local development and testing
+## 7. Local development and testing
+
+Everything runs against a local Supabase stack in Docker. These are the CLI's **well-known demo keys**, never production ones.
 
 ```bash
-npx supabase@2.122.1 db start
+npx supabase@2.122.1 start -x studio,imgproxy,logflare,vector,supavisor,realtime,storage-api,mailpit,postgres-meta
 ```
 
 ```bash
 npx supabase@2.122.1 test db
 ```
 
-The first command starts a Postgres instance in Docker; the second runs the pgTAP tests in `supabase/tests/`. CI runs the same steps in the `database` job of `.github/workflows/ci.yml`.
+```bash
+eval "$(npx supabase@2.122.1 status -o env | sed 's/^/export SBX_/')"
+SB_ANON_KEY="$SBX_ANON_KEY" SB_SERVICE_ROLE_KEY="$SBX_SERVICE_ROLE_KEY" npx playwright test -c playwright.accounts.config.ts
+```
+
+1. The first command starts Postgres, Auth, the API gateway and the Edge Functions runtime.
+2. The second runs the pgTAP tests in `supabase/tests/`.
+3. The third builds the app with accounts enabled against the local stack (port 4174) and runs `e2e/auth.spec.ts` plus the 1.0 guest journeys on that build.
+
+The local stack enables the email provider **only** as a test seam, so tests can create sessions without Google. CI runs the same steps in the `database` job of `.github/workflows/ci.yml`.
+
+To try the accounts UI by hand: `VITE_ENABLE_ACCOUNTS=true VITE_SUPABASE_URL=http://127.0.0.1:54321 VITE_SUPABASE_ANON_KEY=<local ANON_KEY> npm run dev`. Google sign-in won't work locally unless you configure a Google client in `supabase/config.toml`.

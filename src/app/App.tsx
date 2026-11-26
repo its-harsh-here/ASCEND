@@ -4,6 +4,10 @@ import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'r
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { Button } from '@/components/ui/button';
 import { Skeleton, TooltipProvider } from '@/components/ui/primitives';
+import { accountsAvailable } from '@/cloud/config';
+import { takeAuthError } from '@/cloud/callback';
+import { initSession, takeSignedOutNotice, useSession } from '@/cloud/session';
+import { gateChoiceMade, rememberGuestChoice } from '@/features/auth/gateChoice';
 import { db, isDemoMode } from '@/db/schema';
 import { DEFAULT_SETTINGS } from '@/domain/types';
 import { useSettings, useToday } from '@/hooks/data';
@@ -33,6 +37,9 @@ const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const ReviewsPage = lazy(() => import('@/features/reviews/ReviewsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const Onboarding = lazy(() => import('@/features/onboarding/Onboarding'));
+// Account screens load only when accounts are enabled in this build.
+const Gate = lazy(() => import('@/features/auth/Gate').then((m) => ({ default: m.Gate })));
+const ClaimScreen = lazy(() => import('@/features/auth/ClaimScreen').then((m) => ({ default: m.ClaimScreen })));
 const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
 const QuickAddDialog = lazy(() => import('@/components/quest/QuickAdd').then((m) => ({ default: m.QuickAddDialog })));
 const QuestEditorDialog = lazy(() => import('@/components/quest/QuestEditor').then((m) => ({ default: m.QuestEditorDialog })));
@@ -238,6 +245,54 @@ function AppShell() {
   );
 }
 
+/**
+ * Accounts (Phase 2). Returns which pre-app screen, if any, replaces the normal flow:
+ * the Gate for a first run without a session, the username claim after a first Google sign-in.
+ * With accounts disabled (the default build) this always returns 'app'.
+ */
+function useAccountsBoot(onboarded: boolean | undefined) {
+  const enabled = accountsAvailable();
+  const status = useSession((s) => s.status);
+  const profile = useSession((s) => s.profile);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const toast = useUI((s) => s.toast);
+  const [authError] = useState(takeAuthError);
+  const [gateDone, setGateDone] = useState(() => !enabled || gateChoiceMade());
+  const [claimSkipped, setClaimSkipped] = useState(false);
+
+  useEffect(() => {
+    if (!enabled) return;
+    void initSession();
+    if (takeSignedOutNotice()) toast({ title: 'Signed out', description: 'You’re back in the guest journal on this device. Sign in again from Settings.' });
+  }, [enabled, toast]);
+  // After onboarding, a failed sign-in (started from Settings) is reported as a toast, not the Gate.
+  useEffect(() => {
+    if (enabled && onboarded && authError) toast({ title: 'Sign-in didn’t finish', description: authError.message });
+  }, [enabled, onboarded, authError, toast]);
+
+  const chooseGuest = () => {
+    rememberGuestChoice();
+    setGateDone(true);
+    if (location.pathname === '/auth') navigate('/', { replace: true });
+  };
+
+  let route: 'app' | 'splash' | 'gate' | 'claim' = 'app';
+  if (enabled && onboarded !== undefined) {
+    if (location.pathname === '/auth') route = status === 'signed-in' ? 'app' : status === 'loading' ? 'splash' : 'gate';
+    else if (!onboarded) {
+      if (status === 'loading') route = 'splash';
+      else if (status !== 'signed-in' && !gateDone) route = 'gate';
+      else if (status === 'signed-in' && profile && profile.username === null && !claimSkipped) route = 'claim';
+    }
+  }
+  useEffect(() => {
+    if (enabled && location.pathname === '/auth' && status === 'signed-in') navigate('/', { replace: true });
+  }, [enabled, location.pathname, status, navigate]);
+
+  return { route, authError: onboarded ? null : authError, chooseGuest, skipClaim: () => setClaimSkipped(true) };
+}
+
 function Root() {
   const settings = useSettings();
   const today = useToday();
@@ -263,22 +318,24 @@ function Root() {
   }, [settings?.onboarded]);
 
   const reduce = settings?.reducedMotion === 'reduce' ? 'always' : settings?.reducedMotion === 'full' ? 'never' : 'user';
-  if (!settings || (isDemoMode() && !settings.onboarded)) {
-    return (
-      <div className="atmosphere grid min-h-dvh place-items-center">
-        <div className="font-display text-xl tracking-[0.3em] text-fg-muted">ASCEND</div>
-      </div>
-    );
-  }
+  const accounts = useAccountsBoot(settings?.onboarded);
+  const splash = (
+    <div className="atmosphere grid min-h-dvh place-items-center">
+      <div className="font-display text-xl tracking-[0.3em] text-fg-muted">ASCEND</div>
+    </div>
+  );
+  if (!settings || (isDemoMode() && !settings.onboarded)) return splash;
+
+  let screen: ReactNode;
+  if (accounts.route === 'splash') screen = splash;
+  else if (accounts.route === 'gate') screen = <Gate error={accounts.authError} onGuest={accounts.chooseGuest} />;
+  else if (accounts.route === 'claim') screen = <ClaimScreen onSkip={accounts.skipClaim} />;
+  else if (settings.onboarded) screen = <AppShell />;
+  else screen = <Onboarding />;
+
   return (
     <MotionConfig reducedMotion={reduce}>
-      {settings.onboarded ? (
-        <AppShell />
-      ) : (
-        <Suspense fallback={null}>
-          <Onboarding />
-        </Suspense>
-      )}
+      <Suspense fallback={splash}>{screen}</Suspense>
       <CelebrationLayer />
       <Toaster />
       <PwaPrompt />

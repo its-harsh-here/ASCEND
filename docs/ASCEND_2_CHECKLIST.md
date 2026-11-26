@@ -43,16 +43,16 @@
 
 ## P2 — Auth and identity
 
-- [ ] **P2-01** `npm i @supabase/supabase-js` (pin the exact version). Create `src/cloud/supabase.ts` exporting `getSupabase(): SupabaseClient | null`. It returns null unless both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` exist. Client options: `{ auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true } }`. Load it dynamically (`import()`) so guests never fetch it.
-- [ ] **P2-02** Create `src/cloud/callback.ts` with `handleOAuthCallback()`. If `location.search` has `auth=callback`:
+- [x] **P2-01** `npm i @supabase/supabase-js` (pin the exact version). Create `src/cloud/supabase.ts` exporting `getSupabase(): SupabaseClient | null`. It returns null unless both `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` exist. Client options: `{ auth: { flowType: 'pkce', detectSessionInUrl: false, persistSession: true, autoRefreshToken: true } }`. Load it dynamically (`import()`) so guests never fetch it.
+- [x] **P2-02** Create `src/cloud/callback.ts` with `handleOAuthCallback()`. If `location.search` has `auth=callback`:
   - with `code`: `exchangeCodeForSession(code)`
   - with `error`/`error_description`: store it for the Gate to display
   - always: `history.replaceState(null, '', BASE_URL + '#/')`
 
   Call it from `src/main.tsx` before `createRoot`. ✔ test: unit tests with mocked client for the success, error and offline cases.
-- [ ] **P2-03** In `src/db/schema.ts`, add `resolveDbName()` (demo → `ascend-demo`; `localStorage['ascend:account']` → `ascend-u-<uid>`; else `ascend`) and `setActiveAccount(uid|null)` (writes the key, reloads). Keep the `db` export as `new AscendDB(resolveDbName())`. ✔ test: unit test for each branch.
-- [ ] **P2-04** In `src/hooks/useSession.ts`, subscribe to `onAuthStateChange`. On `SIGNED_IN` with a different UID than the active DB, call `setActiveAccount`. On `SIGNED_OUT`, call `setActiveAccount(null)`. On refresh failure, set a `sessionExpired` flag (UI banner).
-- [ ] **P2-05** Migration `0001_identity.sql`:
+- [x] **P2-03** In `src/db/schema.ts`, add `resolveDbName()` (demo → `ascend-demo`; `localStorage['ascend:account']` → `ascend-u-<uid>`; else `ascend`) and `setActiveAccount(uid|null)` (writes the key, reloads). Keep the `db` export as `new AscendDB(resolveDbName())`. ✔ test: unit test for each branch.
+- [x] **P2-04** In `src/hooks/useSession.ts`, subscribe to `onAuthStateChange`. On `SIGNED_IN` with a different UID than the active DB, call `setActiveAccount`. On `SIGNED_OUT`, call `setActiveAccount(null)`. On refresh failure, set a `sessionExpired` flag (UI banner).
+- [x] **P2-05** Migration `0001_identity.sql`:
   - `profiles` (`id`, `username citext unique` + regex check, `display_name`, `avatar_id`, `created_at`, `username_changed_at`)
   - RLS: owner read/update via RPC only; public read deferred to P4
   - `private.reserved_usernames` seeded with admin, root, support, ascend, moderator, system, null, undefined, api, auth and the route names
@@ -60,26 +60,28 @@
   - RPCs `claim_username(text)` and `check_username_available(text)`, rate-limited via `private.rate_hits` (30/min per user)
 
   ✔ test: `identity.test.sql`.
-- [ ] **P2-06** Create `src/features/auth/Gate.tsx`, rendered at `#/auth` outside `AppShell` (in `App.tsx`, routes before the shell):
+- [x] **P2-06** Create `src/features/auth/Gate.tsx`, rendered at `#/auth` outside `AppShell` (in `App.tsx`, routes before the shell):
   - **Continue with Google**, which calls `signInWithOAuth({ provider: 'google', options: { redirectTo: BASE + '?auth=callback' } })`
   - **Continue as guest**, which goes to the existing onboarding
   - a one-line explanation of what each option gives you
   - error region `role="alert"` for callback errors (cancelled, offline, provider error) with retry
   - reduced-motion-aware brand animation (UI/UX §3.2)
-- [ ] **P2-07** `src/features/auth/UsernameClaim.tsx`: shown after the first Google sign-in when `profiles.username is null`. Username (debounced availability via `check_username_available`), display name pre-filled from Google metadata, leaderboard opt-in (default off). Zod: `^[a-z0-9_]{3,20}$`, not reserved.
+- [x] **P2-07** `src/features/auth/UsernameClaim.tsx`: shown after the first Google sign-in when `profiles.username is null`. Username (debounced availability via `check_username_available`), display name pre-filled from Google metadata, leaderboard opt-in (default off). Zod: `^[a-z0-9_]{3,20}$`, not reserved.
 - [ ] **P2-08** (removed: no password reset under ADR-006)
-- [ ] **P2-09** Onboarding: when there's a session without a username, show a username-claim step before the existing steps (`Onboarding.tsx`).
-- [ ] **P2-10** Settings → Account:
+- [x] **P2-09** Onboarding: when there's a session without a username, show a username-claim step before the existing steps (`Onboarding.tsx`).
+- [x] **P2-10** Settings → Account:
   - Google email (read-only, from the session)
   - username with change cooldown (P4 adds the change flow)
   - sign out (+ "remove this account's data from this device", which warns with the outbox count once P3 exists)
   - delete account: typed confirmation, then fresh Google re-auth (`prompt: 'login'`, `intent=delete`), then the Edge Function
-- [ ] **P2-11** Edge Function `supabase/functions/delete-account`: verify JWT `iat` < 5 min (fresh Google re-auth); `auth.admin.deleteUser(uid)`; return 204. ✔ test: integration test asserting 0 rows remain in user tables.
-- [ ] **P2-12** `vite.config.ts` Workbox: add `runtimeCaching` `{ urlPattern: /supabase\.co/, handler: 'NetworkOnly' }`. Ensure `navigateFallback` still serves `/?auth=callback`.
-- [ ] **P2-13** `deploy.yml` and `ci.yml`: pass `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from repository **variables**. Add a CI step that fails if `dist/` contains `service_role`.
-- [ ] **P2-14** Supabase dashboard settings, documented exactly in `docs/OPERATIONS.md`: Google provider only (email provider **off**), redirect allow-list (`https://its-harsh-here.github.io/ASCEND/`, `http://localhost:4173/`, `http://localhost:5173/`), auth rate limits at defaults. Google Cloud OAuth consent screen (External, scopes `openid email profile`), with authorized redirect = the Supabase callback URL.
-- [ ] **P2-15** Create `e2e/auth.spec.ts` (local stack, email provider enabled **only** in local test config as a test seam): admin-created user → programmatic session → app boots into the account DB → reload persists → logout → guest data intact; callback error states (`?auth=callback&error=access_denied`) render the retry UI.
-- [ ] **P2 Exit:** all 1.0 E2E pass with accounts disabled and enabled; auth E2E green; pgTAP green.
+- [x] **P2-11** Edge Function `supabase/functions/delete-account`: verify JWT `iat` < 5 min (fresh Google re-auth); `auth.admin.deleteUser(uid)`; return 204. ✔ test: integration test asserting 0 rows remain in user tables.
+- [x] **P2-12** `vite.config.ts` Workbox: add `runtimeCaching` `{ urlPattern: /supabase\.co/, handler: 'NetworkOnly' }`. Ensure `navigateFallback` still serves `/?auth=callback`.
+- [x] **P2-13** `deploy.yml` and `ci.yml`: pass `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` from repository **variables**. Add a CI step that fails if `dist/` contains `service_role`.
+- [ ] **P2-14** *(owner: deferred 2026-11-26 — see OPERATIONS §2; accounts stay off until done)* Supabase dashboard settings, documented exactly in `docs/OPERATIONS.md`: Google provider only (email provider **off**), redirect allow-list (`https://its-harsh-here.github.io/ASCEND/`, `http://localhost:4173/`, `http://localhost:5173/`), auth rate limits at defaults. Google Cloud OAuth consent screen (External, scopes `openid email profile`), with authorized redirect = the Supabase callback URL.
+- [x] **P2-15** Create `e2e/auth.spec.ts` (local stack, email provider enabled **only** in local test config as a test seam): admin-created user → programmatic session → app boots into the account DB → reload persists → logout → guest data intact; callback error states (`?auth=callback&error=access_denied`) render the retry UI.
+- [x] **P2 Exit:** all 1.0 E2E pass with accounts disabled and enabled; auth E2E green; pgTAP green.
+
+> Built 2026-11-26 behind `VITE_ENABLE_ACCOUNTS` (off). Remaining before turning it on: P2-14 (owner), P0-02 live Google verification, and the Google button branding. Deviations: *Phase 2 results* in ASCEND_2_DECISIONS.md.
 
 ## P3 — Cloud sync
 

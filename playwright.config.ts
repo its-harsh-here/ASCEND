@@ -11,7 +11,8 @@ const liveUrl = process.env.PLAYWRIGHT_BASE_URL;
 export default defineConfig({
   testDir: './e2e',
   testMatch: liveUrl ? 'live.spec.ts' : '*.spec.ts',
-  testIgnore: liveUrl ? undefined : 'live.spec.ts',
+  // auth.spec.ts needs an accounts build + local Supabase: it runs via playwright.accounts.config.ts.
+  testIgnore: liveUrl ? undefined : ['live.spec.ts', 'auth.spec.ts'],
   timeout: 60_000,
   fullyParallel: false,
   workers: 1,
