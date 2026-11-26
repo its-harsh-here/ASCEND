@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AscendDB, SCHEMA_V1, db } from '@/db/schema';
+import { AscendDB, SCHEMA_V1, db, CURRENT_SCHEMA_VERSION } from '@/db/schema';
 import { addDaysKey, todayKey } from '@/lib/dates';
 import { generatePlan } from '@/planning/planner';
 import { previewReschedule } from '@/planning/rescheduler';
@@ -179,7 +179,7 @@ describe('backup, restore and CSV', () => {
     await updateSettings({ playerName: 'Ada' });
     const backup = JSON.parse(JSON.stringify(await exportBackup()));
     expect(backup.format).toBe('ascend-backup');
-    expect(backup.schemaVersion).toBe(2);
+    expect(backup.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     await db.delete();
     await db.open();
     expect(await db.quests.count()).toBe(0);
@@ -238,7 +238,7 @@ describe('database migrations and persistence', () => {
 
     const upgraded = new AscendDB(name);
     await upgraded.open();
-    expect(upgraded.verno).toBe(2);
+    expect(upgraded.verno).toBe(CURRENT_SCHEMA_VERSION);
     const q = (await upgraded.quests.get('old'))!;
     expect(q.deadlineLocked).toBe(false);
     expect(q.dependencies).toEqual([]);

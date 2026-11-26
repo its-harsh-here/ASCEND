@@ -32,7 +32,8 @@ jobs:
 
   # Local Supabase (Postgres, Auth, API gateway, Edge Functions) in Docker:
   #  1. pgTAP: schema, RLS and RPC rules (supabase/tests)
-  #  2. accounts E2E: an accounts-enabled build against the local stack (playwright.accounts.config.ts),
+  #  2. sync chaos test (src/sync/chaos.cloud.test.ts): two simulated devices must converge
+  #  3. accounts + sync E2E: an accounts-enabled build against the local stack (playwright.accounts.config.ts),
   #     plus the 1.0 guest journeys on that build. Sessions come from the LOCAL-only email provider;
   #     the keys are the local stack's well-known demo keys, not production credentials.
   database:
@@ -54,7 +55,11 @@ jobs:
       - run: npm ci
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
-      - name: Accounts E2E against the local stack
+      - name: Chaos test — two devices, 50 seeds × 200 ops, random network drops
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export SBX_/')"
+          SB_ANON_KEY="$SBX_ANON_KEY" SB_SERVICE_ROLE_KEY="$SBX_SERVICE_ROLE_KEY" npx vitest run -c vitest.cloud.config.ts
+      - name: Accounts and sync E2E against the local stack
         run: |
           eval "$(supabase status -o env | sed 's/^/export SBX_/')"
           SB_ANON_KEY="$SBX_ANON_KEY" SB_SERVICE_ROLE_KEY="$SBX_SERVICE_ROLE_KEY" \

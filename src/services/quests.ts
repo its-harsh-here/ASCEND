@@ -93,12 +93,14 @@ export interface CompletionResult {
 export async function completeQuest(id: string): Promise<CompletionResult> {
   const settings = await getSettings();
   const before = levelFromXp(await totalXp()).level;
-  const res = await db.transaction('rw', [db.quests, db.xpEvents, db.activity, db.questlines], async () => {
+  const res = await db.transaction('rw', [db.quests, db.xpEvents, db.activity, db.questlines, db.questCompletionEvents], async () => {
     const q = await db.quests.get(id);
     if (!q) throw new Error('Quest not found');
     if (q.status === 'done') return { xp: 0, coins: 0, restored: false, alreadyDone: true, quest: q };
     const now = nowIso();
     await db.quests.update(id, { status: 'done', completedAt: now, updatedAt: now });
+    // Append-only event (Phase 3): syncs, and is the input the server will use to verify XP (Phase 5).
+    await db.questCompletionEvents.add({ eventId: uid(), questId: id, kind: 'complete', occurredAt: now });
     const key = questSourceKey(id);
     const existing = await db.xpEvents.where('sourceKey').equals(key).first();
     let xp: number;
@@ -151,10 +153,12 @@ export async function completeQuest(id: string): Promise<CompletionResult> {
 
 /** Reopen a completed quest. Its XP event is revoked (not deleted), so completing again cannot duplicate XP. */
 export async function reopenQuest(id: string, status: QuestStatus = 'todo'): Promise<void> {
-  await db.transaction('rw', db.quests, db.xpEvents, db.activity, async () => {
+  await db.transaction('rw', [db.quests, db.xpEvents, db.activity, db.questCompletionEvents], async () => {
     const q = await db.quests.get(id);
     if (!q) return;
-    await db.quests.update(id, { status, completedAt: undefined, updatedAt: nowIso() });
+    const now = nowIso();
+    await db.quests.update(id, { status, completedAt: undefined, updatedAt: now });
+    if (q.status === 'done') await db.questCompletionEvents.add({ eventId: uid(), questId: id, kind: 'reopen', occurredAt: now });
     const ev = await db.xpEvents.where('sourceKey').equals(questSourceKey(id)).first();
     if (ev && !ev.revoked) await db.xpEvents.update(ev.id, { revoked: true });
     if (q.status === 'done') await logActivity('quest.reopened', `Reopened “${q.title}”`, id);

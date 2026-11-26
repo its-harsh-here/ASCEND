@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Phase 2 accounts suite. Builds the app WITH accounts enabled against the local Supabase stack
  * (`supabase start`), then runs:
+ *  - e2e/sync.spec.ts — two devices: restore, offline merges, conflicts, delete vs edit, interrupted/replayed pushes
  *  - e2e/auth.spec.ts — Gate, callback errors, account database switching, username claim, sign-out, deletion
  *  - e2e/journey.spec.ts — the 1.0 guest journeys on the accounts build (they choose "Continue as guest")
  *
@@ -22,6 +23,7 @@ export default defineConfig({
   use: { baseURL: origin, trace: 'off', viewport: { width: 1440, height: 900 } },
   projects: [
     { name: 'auth', testMatch: 'auth.spec.ts', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'sync', testMatch: 'sync.spec.ts', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
     {
       name: 'guest-journeys',
       testMatch: 'journey.spec.ts',

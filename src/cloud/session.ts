@@ -72,6 +72,8 @@ function apply(session: Session | null) {
       return;
     }
     void refreshProfile();
+    // The account's own database is open: start syncing it (Phase 3).
+    void import('@/sync/start').then((m) => m.startCloudSync());
   } else {
     useSession.setState({ status: 'signed-out', user: null, profile: null });
     if (activeAccount()) {

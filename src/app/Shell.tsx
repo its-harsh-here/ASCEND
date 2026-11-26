@@ -16,6 +16,7 @@ import { THEME_CYCLE, THEME_LABEL } from '@/lib/theme';
 import { cn, formatNumber } from '@/lib/utils';
 import { updateSettings } from '@/services/core';
 import { ACHIEVEMENTS } from '@/domain/achievements';
+import { SyncIndicator } from '@/features/sync/SyncIndicator';
 import { useUI } from '@/store/ui';
 import { NAV, NAV_GROUP_LABEL, type NavItem } from './nav';
 
@@ -343,6 +344,7 @@ export function Topbar() {
           )}
         </div>
         <div className="ml-auto flex items-center gap-1.5">
+          <SyncIndicator />
           <button onClick={() => setPalette(true)} className="hidden h-9 shrink-0 items-center gap-2 rounded-[10px] border border-line bg-surface px-3 text-sm whitespace-nowrap text-fg-dim transition-colors hover:border-line-strong hover:text-fg-muted sm:flex" aria-label="Open command palette">
             <Search className="size-4" />
             <span className="hidden 2xl:inline">Search or command…</span>

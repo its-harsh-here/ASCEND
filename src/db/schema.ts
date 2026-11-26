@@ -1,5 +1,7 @@
 import { resolveDbName } from './accounts';
+import { createSyncCapture } from '@/sync/middleware';
 import Dexie, { type Table } from 'dexie';
+import type { CloudCacheRow, OutboxEntry, QuestCompletionEvent, SyncConflict, SyncStateRow } from '@/sync/types';
 import {
   DEFAULT_SETTINGS,
   settingsSchema,
@@ -26,6 +28,8 @@ import {
  * Never edit a released version's store definition — add a new version with an upgrade function.
  * v1 — initial release: core quest/campaign/progression tables.
  * v2 — recurrence, time blocks, reviews and activity log; quest recurrence index; backfills new quest fields.
+ * v3 — cloud sync bookkeeping (outbox, sync state, conflicts, cloud cache) and append-only quest
+ *      completion events. Purely additive: no existing row is touched.
  */
 export const SCHEMA_V1 = {
   campaigns: 'id, status, createdAt',
@@ -51,7 +55,18 @@ export const SCHEMA_V2 = {
   activity: 'id, date, createdAt',
 };
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const SCHEMA_V3 = {
+  ...SCHEMA_V2,
+  outbox: '++seq, &mutationId, table, key',
+  syncState: 'key',
+  syncConflicts: 'id, table, recordId, createdAt',
+  questCompletionEvents: 'eventId, questId, occurredAt',
+  cloudCache: 'key',
+  /** Never holds rows: a transaction that includes it is applying a pull, so the sync middleware skips capture. */
+  syncApplyMarker: 'id',
+};
+
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export class AscendDB extends Dexie {
   campaigns!: Table<Campaign, string>;
@@ -69,6 +84,11 @@ export class AscendDB extends Dexie {
   reviews!: Table<Review, string>;
   activity!: Table<ActivityEntry, string>;
   settings!: Table<Settings, string>;
+  outbox!: Table<OutboxEntry, number>;
+  syncState!: Table<SyncStateRow, string>;
+  syncConflicts!: Table<SyncConflict, string>;
+  questCompletionEvents!: Table<QuestCompletionEvent, string>;
+  cloudCache!: Table<CloudCacheRow, string>;
 
   constructor(name: string) {
     super(name);
@@ -108,6 +128,7 @@ export class AscendDB extends Dexie {
             if (parsed.success) Object.assign(s, parsed.data);
           });
       });
+    this.version(3).stores(SCHEMA_V3);
   }
 }
 
@@ -134,3 +155,7 @@ export { isDemoMode, setDemoMode } from './accounts';
 
 /** Demo, guest and each account get separate databases, so sample data and accounts never mix (accounts.ts). */
 export const db = new AscendDB(resolveDbName());
+
+/** Only an account's database syncs: guest and demo journals never capture an outbox. */
+export const isSyncedDb = (name: string = db.name): boolean => name.startsWith('ascend-u-');
+if (isSyncedDb()) db.use(createSyncCapture());

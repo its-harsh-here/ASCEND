@@ -79,8 +79,10 @@ export function QuestEditorDialog() {
       setRepeat({ on: f.category === 'daily' || f.category === 'weekly', frequency: f.category === 'weekly' ? 'weekly' : 'daily', weekdays: [1] });
       setPendingSubtasks([]);
     }
+    // Re-run once when the quest first becomes available (the editor can open before the quest list has
+    // loaded, e.g. on the first open after a reload); a boolean dep so live updates never clobber typing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor.open, editor.questId]);
+  }, [editor.open, editor.questId, existing !== undefined]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
   const depCandidates = useMemo(() => {
