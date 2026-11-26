@@ -1,0 +1,145 @@
+# ASCEND 2.0 — Architecture Decision Records
+
+> Status legend: **Accepted** (approved by the project owner, 2026-11-25) · **Rejected** (alternative recorded for context).
+
+| ADR | Decision | Status |
+|---|---|---|
+| 001 | Keep IndexedDB/Dexie as the working DB; Postgres is a synced replica | Accepted |
+| 002 | Supabase as the backend (Auth + Postgres + one Edge Function) | Accepted |
+| 003 | Capture sync mutations with a Dexie DBCore middleware, not per-service code | Accepted (confirm in spike P0-01) |
+| 004 | OAuth PKCE with `detectSessionInUrl: false` and a pre-router callback handler | Accepted (confirm in spike P0-02) |
+| 005 | Account-scoped local databases with reload-on-switch | Accepted |
+| 006 | **Google + guest only.** No email/password, no password reset, no email delivery | **Accepted** |
+| 007 | **No username login.** Usernames are for display and search | **Accepted** |
+| 008 | Two XP ledgers: local (configurable) vs verified (server rules) | Accepted |
+| 009 | No retroactive verified XP for imported guest history | Accepted |
+| 010 | Sync `local_xp_events` (option A) | Accepted by default: not one of the 8 owner questions; recommendation adopted, easy to change before P3 |
+| 011 | Leaderboards on precomputed period scores in Postgres; no Redis | Accepted (confirm in spike P0-04) |
+| 012 | **Stay on GitHub Pages** | **Accepted** (owner delegated the choice) |
+| 013 | **Keep WebLLM**, self-hosting its library so CSP `script-src 'self'` holds | **Accepted** |
+| 014 | Predefined avatars and frames only; no uploads | Accepted |
+| 015 | UTC periods for leaderboards; local-time display | Accepted |
+| 016 | Per-table conflict policies (no global last-write-wins) | Accepted |
+| 017 | Writes only through `SECURITY DEFINER` RPCs; no direct DML grants | Accepted |
+| 018 | Guilds deferred to Phase 7; no chat | Accepted |
+
+---
+
+### ADR-001 — IndexedDB stays primary
+**Context.** All 1.0 screens read Dexie through live queries (`src/hooks/data.ts`). Offline-first is a hard requirement.
+**Decision.** Keep Dexie as the UI's source of truth. Add a background sync to Postgres.
+**Alternatives.**
+- Supabase as primary with an offline cache. *Rejected:* it would rewrite every hook and service and lose instant writes.
+- A CRDT library (Yjs/Automerge). *Rejected:* heavy and opaque for relational data, and it complicates server-side validation of XP.
+
+**Consequences.** Sync logic is ours to build and test, and it is the most valuable portfolio component. Conflict handling is explicit.
+
+### ADR-002 — Supabase
+**Context.** The requirements are managed auth (no custom password storage), real constraints and transactions for XP integrity, and ₹0.
+**Decision.** Supabase free plan.
+**Alternatives.** Firebase, Appwrite, Cloudflare D1, self-hosting. See COST §7.
+**Consequences.** Limits are 500 MB, pausing and no backups. Mitigated in COST §5. All logic stays portable SQL.
+
+### ADR-003 — DBCore middleware capture
+**Context.** There are about 50 mutation functions across `src/services/*.ts`. Adding sync calls to each is error-prone, and new code would forget it.
+**Decision.** A `db.use({ stack: 'dbcore', name: 'sync-capture', create })` middleware intercepts `mutate` requests (`add`, `put`, `delete`, `deleteRange`) on synced tables. It writes `outbox` rows **inside the same transaction**. Pre-images for field-level merge come from a `getMany` inside the middleware.
+**Alternatives.** Dexie hooks (`creating`/`updating`/`deleting`). *Rejected:* the deleting hook is not invoked by `Table.clear()` (used by `restoreBackup`), so deletions would be missed. DBCore middleware sees every low-level mutation, including range deletes. Verify both behaviours with a spike test before committing (CHECKLIST P3-01).
+**Risks.** Middleware bugs affect every write. Mitigations: an exhaustive unit test that runs **every existing service test** with the middleware enabled and asserts the outbox contents; disabled for guest and demo DBs.
+
+### ADR-004 — OAuth on GitHub Pages with a hash router
+**Context.** `HashRouter` routes look like `#/campaigns`. supabase-js's implicit-flow detection can misread hash fragments, and there is a known issue where routes containing `#access_token=` are treated as callbacks.
+**Decision.**
+- Use the PKCE flow with `redirectTo = <origin><BASE>?auth=callback`. The code arrives in the **query string**, before `#`.
+- `src/cloud/callback.ts` runs in `main.tsx` before React mounts. It calls `exchangeCodeForSession`, then `history.replaceState` to `<BASE>#/`.
+- `detectSessionInUrl: false`.
+
+**Alternatives.** Switching to `BrowserRouter` plus a `404.html` redirect hack on Pages. *Rejected:* it is fragile with the service worker and changes every URL.
+**Verification.** E2E test against the local Supabase stack's OAuth emulation, or a mocked token endpoint.
+
+### ADR-005 — Account-scoped local databases
+**Decision.** DB names are `ascend` (guest), `ascend-demo`, and `ascend-u-<uid>`. Switching reloads the page. This mirrors the proven `setDemoMode` mechanism (`src/db/schema.ts`).
+**Why.** `db` is a module-level import in every service. Threading a handle through would touch every file. A reload guarantees no stale handles or live queries.
+**Trade-off.** Sign-in and sign-out cost a page reload; measure it in Phase 2.
+
+### ADR-006 — Google + guest only (ACCEPTED)
+**Decision (owner).** Accounts are created and accessed only with Google. Guest mode remains the no-account option. There are no passwords, no password reset, no email verification and no email delivery.
+**Consequences.**
+- Removes the SMTP/domain cost conflict, credential stuffing, password-reset enumeration and the CAPTCHA dependency.
+- Users without a Google account can still use everything offline as guests; they cannot sync or appear on leaderboards.
+- Re-authentication for sensitive actions means a fresh Google sign-in (SECURITY §4.1).
+**Revisit if.** Users ask for non-Google accounts. Adding email/password later is additive: Supabase supports linking identities.
+
+### ADR-007 — No username login (ACCEPTED)
+**Decision (owner).** Sign-in is Google only. Usernames are unique public handles for profiles, search and leaderboards, never credentials. There is no `username-login` Edge Function.
+
+### ADR-008 — Two XP ledgers
+**Decision.** The local `xpEvents` stays exactly as is: multipliers, overrides, offline, guest. The server's `verified_xp_ledger` uses fixed rules, caps and windows, and is the only input to ranks. The UI labels both clearly.
+**Consequence.** Users may see two numbers. The profile explains the difference. This is honest, and it avoids "punishing" local customization.
+
+### ADR-009 — No retroactive verification
+**Decision.** Guest history imported at sign-up does **not** earn verified XP. It can't be verified after the fact, and allowing it would let anyone import a forged backup to the top of the board.
+**Alternative.** Credit the last 7 days of imported completions, subject to caps. *Rejected:* forged-backup risk.
+
+### ADR-010 — Sync local XP ledger (OPEN)
+- Option A: sync `local_xp_events`. Exact local XP on every device; ~25% more storage.
+- Option B: rebuild local XP on each device from synced completion events plus the device's current multipliers. Less storage, but local XP can differ across devices if multiplier settings differed at completion time.
+
+**Recommendation.** A for fidelity while the user count is small. Revisit if storage binds.
+
+### ADR-011 — Ranking in Postgres
+**Decision.** Precomputed `leaderboard_scores` per period, updated atomically with each credit. Reads use a covering index and keyset pagination; rank = `1 + count(better)`. No Redis.
+**Evidence to collect.** `EXPLAIN (ANALYZE, BUFFERS)` on local Postgres with seeded 10k and 100k users. Introduce caching only if p95 exceeds the target in IMPLEMENTATION §5.
+
+### ADR-012 — Stay on GitHub Pages (ACCEPTED)
+**Decision.** The owner delegated the choice. **GitHub Pages** is chosen:
+- the live URL, deploy workflow and post-deploy `verify-live` check already exist and pass
+- it keeps the stack to one provider fewer
+- with Google-only sign-in, the main thing missing headers would protect against (clickjacking of credential forms) no longer exists
+
+**Accepted limitation.** No `frame-ancestors`/HSTS control; mitigated by typed confirmation plus fresh re-auth for destructive actions.
+**Revisit if.** Real-user launch at scale, or a need for server-side headers. Cloudflare Pages (free) supports `_headers`, and the build is portable (`BASE_PATH=/`).
+
+### ADR-013 — Keep WebLLM, self-hosted (ACCEPTED)
+**Decision (owner).** Keep WebLLM. Implement option C: add `@mlc-ai/web-llm` as a dependency, loaded through a lazy `import()` chunk that is excluded from the PWA precache. This replaces the runtime `https://esm.run` import in `src/ai/providers.ts`, so `script-src 'self'` holds. Model weights still download at first use via `connect-src` to pinned model hosts.
+**Cost.** A larger lazy chunk, which only users who enable WebLLM download.
+
+### ADR-014 — No avatar uploads
+Predefined sigils plus unlockable frames. This avoids storage cost, moderation and malicious-file handling. Revisit with a moderation plan if demanded.
+
+### ADR-015 — UTC periods
+Weekly boards use UTC ISO weeks; monthly boards use UTC months. They are displayed in local time ("resets Mon 05:30 IST").
+**Why.** One global board needs one boundary. Per-user timezone boards fragment rankings.
+**Streaks** use the profile timezone, with a 30-day change cooldown to stop "timezone hopping".
+
+### ADR-016 — Per-table conflict policies
+
+| Data | Policy |
+|---|---|
+| Completion events, focus sessions, XP ledgers, redemptions | Append-only, idempotent |
+| Quests, campaigns | Three-way field merge; text conflicts → preview |
+| Locked deadlines | Lock wins |
+| Deletes | Tombstone wins + "Restore" offer |
+| Settings | Per-key LWW |
+| Subtasks, time blocks | Row LWW |
+| Recurring instances | Deterministic IDs, `on conflict do nothing` |
+
+### ADR-017 — RPC-only writes
+No `INSERT/UPDATE/DELETE` grants on synced tables. All writes go through `sync_push` and other definer functions, which enforce idempotency, ordering locks, merge policy and XP rules. RLS is a second, independent wall.
+
+### ADR-018 — Guilds later, no chat
+Guilds come in Phase 7, after friends and leaderboards prove the integrity model. Chat is excluded: moderation, realtime quotas and safety obligations are too much for a ₹0 solo project.
+
+---
+
+## Owner decisions (2026-11-25)
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Email/password? | No. Google + guest only; no password reset (ADR-006) |
+| 2 | Username login? | No. Google or guest (ADR-007) |
+| 3 | Hosting | Delegated → stay on GitHub Pages (ADR-012) |
+| 4 | WebLLM | Keep, self-hosted bundle (ADR-013) |
+| 5 | Leaderboard default | Opt-in, as proposed ("yes" to the proposal) |
+| 6 | Caps (1,500 XP/day, 3 boss/day, 1 legendary/week) | Yes |
+| 7 | Encrypted nightly `pg_dump` artifacts | Yes |
+| 8 | Weekly keep-alive ping | Yes |
