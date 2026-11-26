@@ -1,4 +1,4 @@
-import { Bell, ChevronsLeft, ChevronsRight, Coins, Flame, Menu, Plus, Search, Target, X } from 'lucide-react';
+import { Bell, ChevronsLeft, ChevronsRight, Coins, Flame, Menu, Monitor, Moon, Plus, Search, Sun, Target, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
@@ -9,9 +9,12 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/dialog'
 import { Kbd, ProgressRing, Tooltip } from '@/components/ui/primitives';
 import { isDemoMode, setDemoMode } from '@/db/schema';
 import { buildBriefing } from '@/domain/briefing';
+import type { Settings } from '@/domain/types';
 import { useAchievementUnlocks, useCampaigns, useProfile, useQuests, useSettings, useTimeBlocks, useToday } from '@/hooks/data';
 import { diffDays, relativeDayLabel } from '@/lib/dates';
+import { THEME_CYCLE, THEME_LABEL } from '@/lib/theme';
 import { cn, formatNumber } from '@/lib/utils';
+import { updateSettings } from '@/services/core';
 import { ACHIEVEMENTS } from '@/domain/achievements';
 import { useUI } from '@/store/ui';
 import { NAV, NAV_GROUP_LABEL, type NavItem } from './nav';
@@ -70,7 +73,7 @@ function NavGroups({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?:
 function Brand({ collapsed }: { collapsed: boolean }) {
   return (
     <Link to="/" className="flex items-center gap-2.5 px-2" aria-label="Ascend home">
-      <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-8 drop-shadow-[0_0_12px_rgb(233_180_76/0.35)]" />
+      <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-8 drop-shadow-[0_0_12px_color-mix(in_oklab,var(--c-gold)_35%,transparent)]" />
       {!collapsed && (
         <div className="leading-none">
           <div className="font-display text-[1.05rem] font-bold tracking-[0.22em]">ASCEND</div>
@@ -78,6 +81,26 @@ function Brand({ collapsed }: { collapsed: boolean }) {
         </div>
       )}
     </Link>
+  );
+}
+
+const THEME_ICON = { dark: Moon, light: Sun, system: Monitor } as const;
+
+/** Cycles Dark → Light → System. The full picker with previews lives in Settings → Appearance. */
+function ThemeToggle({ theme }: { theme: Settings['theme'] }) {
+  const Icon = THEME_ICON[theme];
+  const next = THEME_CYCLE[theme];
+  return (
+    <Tooltip content={`Theme: ${THEME_LABEL[theme]} — switch to ${THEME_LABEL[next]}`}>
+      <button
+        onClick={() => void updateSettings({ theme: next })}
+        className="grid h-8 w-8 shrink-0 place-items-center self-center rounded-lg text-fg-dim hover:bg-surface-2 hover:text-fg"
+        aria-label={`Theme: ${THEME_LABEL[theme]}. Switch to ${THEME_LABEL[next]}`}
+        data-testid="theme-toggle"
+      >
+        <Icon className="size-4" />
+      </button>
+    </Tooltip>
   );
 }
 
@@ -113,13 +136,16 @@ export function Sidebar() {
             )}
           </Link>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="mt-2 flex h-8 w-full items-center justify-center gap-2 rounded-lg text-xs text-fg-dim hover:bg-surface-2 hover:text-fg"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronsRight className="size-4" /> : <><ChevronsLeft className="size-4" /> Collapse <Kbd>[</Kbd></>}
-        </button>
+        <div className={cn('mt-2 flex gap-1', collapsed && 'flex-col')}>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="flex h-8 flex-1 items-center justify-center gap-2 rounded-lg text-xs text-fg-dim hover:bg-surface-2 hover:text-fg"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronsRight className="size-4" /> : <><ChevronsLeft className="size-4" /> Collapse <Kbd>[</Kbd></>}
+          </button>
+          {settings && <ThemeToggle theme={settings.theme} />}
+        </div>
       </div>
     </motion.aside>
   );

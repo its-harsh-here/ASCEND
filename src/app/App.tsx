@@ -11,6 +11,7 @@ import { nowIso } from '@/lib/utils';
 import { requestPersistentStorage } from '@/services/core';
 import { ensureRecurringInstances } from '@/services/recurring';
 import { seedDemoData } from '@/services/demo';
+import { mirrorAppearance, readAppearance, resolveTheme, type Appearance } from '@/lib/theme';
 import { useUI } from '@/store/ui';
 import { CelebrationLayer, Toaster } from './Celebrations';
 import { G_SHORTCUTS } from './nav';
@@ -71,7 +72,7 @@ class ErrorBoundary extends Component<{ children: ReactNode; resetKey?: string }
 
 function PageFallback() {
   return (
-    <div className="space-y-4" aria-busy="true" aria-label="Loading">
+    <div className="space-y-4" role="status" aria-busy="true" aria-label="Loading">
       <Skeleton className="h-10 w-72" />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Skeleton className="h-40" />
@@ -84,15 +85,21 @@ function PageFallback() {
 }
 
 /** Apply theme, accent and motion preference to the document root. */
-function useThemeSync(theme: string, accent: string, motionPref: string) {
+function useThemeSync(theme: Appearance['theme'], accent: string, motionPref: Appearance['motion'], loaded: boolean) {
+  useEffect(() => {
+    // Only mirror real settings, not the defaults shown while IndexedDB is still loading.
+    if (loaded) mirrorAppearance({ theme, accent, motion: motionPref });
+  }, [theme, accent, motionPref, loaded]);
   useEffect(() => {
     const root = document.documentElement;
     const mq = window.matchMedia('(prefers-color-scheme: light)');
     const apply = () => {
-      const light = theme === 'light' || (theme === 'system' && mq.matches);
+      const light = resolveTheme(theme, mq.matches) === 'light';
       root.classList.toggle('light', light);
       root.classList.toggle('dark', !light);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f5f3ee' : '#0b0a12');
+      // Browser UI colour follows the active theme's --bg token (read after the class switch applies).
+      const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+      if (bg) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg);
     };
     apply();
     mq.addEventListener('change', apply);
@@ -234,7 +241,8 @@ function AppShell() {
 function Root() {
   const settings = useSettings();
   const today = useToday();
-  useThemeSync(settings?.theme ?? 'dark', settings?.accent ?? 'violet', settings?.reducedMotion ?? 'system');
+  const [boot] = useState(readAppearance);
+  useThemeSync(settings?.theme ?? boot.theme ?? 'dark', settings?.accent ?? boot.accent ?? 'violet', settings?.reducedMotion ?? boot.motion ?? 'system', settings !== undefined);
 
   // Make sure a settings row exists so every view can rely on it.
   useEffect(() => {

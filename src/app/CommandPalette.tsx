@@ -1,15 +1,17 @@
 import { Command } from 'cmdk';
 import {
   Archive, BarChart3, CalendarDays, CheckCircle2, Compass, Flag, GanttChart, KanbanSquare, LayoutDashboard, NotebookPen,
-  Plus, Search, Settings, Sparkles, Sun, Swords, Target, Timer, Trophy, Zap,
+  Plus, Search, Settings, Sparkles, Sun, SunMoon, Swords, Target, Timer, Trophy, Zap,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Kbd } from '@/components/ui/primitives';
 import { isPending } from '@/domain/briefing';
-import { useCampaigns, useQuests } from '@/hooks/data';
+import { useCampaigns, useQuests, useSettings } from '@/hooks/data';
 import { useQuestActions } from '@/hooks/useQuestActions';
+import { THEME_CYCLE, THEME_LABEL } from '@/lib/theme';
+import { updateSettings } from '@/services/core';
 import { useFocusTimer } from '@/store/focusTimer';
 import { useUI } from '@/store/ui';
 
@@ -38,6 +40,7 @@ export function CommandPalette() {
   const toast = useUI((s) => s.toast);
   const navigate = useNavigate();
   const quests = useQuests();
+  const settings = useSettings();
   const campaigns = useCampaigns();
   const { complete } = useQuestActions();
   const setFocusQuest = useFocusTimer((s) => s.setQuest);
@@ -63,7 +66,7 @@ export function CommandPalette() {
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[70] flex items-start justify-center bg-[rgb(3_3_8/0.6)] px-3 pt-[12vh] backdrop-blur-[3px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={() => setOpen(false)}>
+        <motion.div className="fixed inset-0 z-[70] flex items-start justify-center bg-[var(--scrim)] px-3 pt-[12vh] backdrop-blur-[3px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={() => setOpen(false)}>
           <motion.div
             initial={{ opacity: 0, y: -12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -110,6 +113,11 @@ export function CommandPalette() {
                     </>
                   )}
                   <Item icon={<NotebookPen />} onSelect={() => go('/reviews')}>Open daily review</Item>
+                  {settings && (
+                    <Item icon={<SunMoon />} value="theme toggle dark light system appearance" onSelect={() => run(() => void updateSettings({ theme: THEME_CYCLE[settings.theme] }))}>
+                      Switch theme to {THEME_LABEL[THEME_CYCLE[settings.theme]]}
+                    </Item>
+                  )}
                 </Command.Group>
                 <Command.Group heading="Navigate" className={group}>
                   <Item icon={<LayoutDashboard />} shortcut="G D" onSelect={() => go('/')}>Command Center</Item>

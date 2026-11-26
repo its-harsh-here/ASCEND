@@ -21,8 +21,8 @@ import { findMissedQuests } from '@/planning/rescheduler';
 import { addMilestone, addQuestline, deleteCampaign, deleteQuestline, setCampaignStatus, updateCampaign, updateMilestone, updateQuestline } from '@/services/campaigns';
 import { updateSettings } from '@/services/core';
 import { useUI } from '@/store/ui';
-import { CAMPAIGN_HEX } from './CampaignsPage';
 import { RescheduleDialog } from './RescheduleDialog';
+import { SWATCHES, swatch, swatchAlpha } from '@/lib/colors';
 
 export default function CampaignDetail() {
   const { id } = useParams();
@@ -47,7 +47,7 @@ export default function CampaignDetail() {
   const total = diffDays(campaign.endDate, campaign.startDate) + 1;
   const elapsed = Math.min(total, Math.max(0, diffDays(today, campaign.startDate) + 1));
   const missed = findMissedQuests(quests, today);
-  const hex = CAMPAIGN_HEX[campaign.color] ?? CAMPAIGN_HEX.violet;
+  const hex = swatch(campaign.color);
   const isDefault = settings?.defaultCampaignId === campaign.id;
   const recurring = quests.filter((q) => q.origin === 'recurring' && q.scheduledDate === today);
   const loose = quests.filter((q) => !q.questlineId && q.origin !== 'recurring');
@@ -56,7 +56,7 @@ export default function CampaignDetail() {
     <div>
       <button onClick={() => navigate('/campaigns')} className="mb-4 flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg"><ArrowLeft className="size-4" /> Campaigns</button>
       <Panel runes className="relative mb-5 overflow-hidden p-6">
-        <div className="absolute inset-0 opacity-50" style={{ background: `radial-gradient(80% 120% at 0% 0%, ${hex}2a, transparent 60%)` }} />
+        <div className="absolute inset-0 opacity-50" style={{ background: `radial-gradient(80% 120% at 0% 0%, ${swatchAlpha(campaign.color, 16)}, transparent 60%)` }} />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center">
           <ProgressRing value={p.ratio} size={108} stroke={8} tone={hex}>
             <div className="text-center">
@@ -229,7 +229,7 @@ function EditCampaignDialog({ open, onOpenChange, campaign }: { open: boolean; o
           ))}
         </div>
         <div className="flex gap-2">
-          {Object.entries(CAMPAIGN_HEX).map(([c, hex]) => <button key={c} onClick={() => setForm({ ...form, color: c })} aria-label={c} aria-pressed={form.color === c} className={cn('size-8 rotate-45 rounded-md border-2', form.color === c ? 'border-fg' : 'border-transparent')} style={{ background: hex }} />)}
+          {SWATCHES.map((c) => <button key={c} onClick={() => setForm({ ...form, color: c })} aria-label={c} aria-pressed={form.color === c} className={cn('size-8 rotate-45 rounded-md border-2', form.color === c ? 'border-fg' : 'border-transparent')} style={{ background: swatch(c) }} />)}
         </div>
       </div>
     </Dialog>

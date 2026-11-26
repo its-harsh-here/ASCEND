@@ -390,7 +390,7 @@ function DayTimelinePanel({ quests, today }: { quests: Quest[]; today: string })
                   animate={{ opacity: 1, scaleX: 1 }}
                   transition={{ delay: idx * 0.04 }}
                   onClick={() => i.kind !== 'block' && openEditor(i.id)}
-                  className={cn('absolute flex h-9 origin-left items-center overflow-hidden rounded-[9px] border px-2.5 text-left text-xs font-semibold', i.done && 'opacity-45')}
+                  className={cn('absolute flex h-9 origin-left items-center overflow-hidden rounded-[9px] border px-2.5 text-left text-xs font-semibold', i.done && 'text-fg-muted line-through decoration-fg-dim')}
                   style={{
                     top: 22 + i.lane * 44,
                     left: `${((i.start - startMin) / span) * 100}%`,

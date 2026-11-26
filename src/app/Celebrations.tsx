@@ -49,7 +49,7 @@ function XpFloat({ c, onDone }: { c: Extract<Celebration, { kind: 'xp' }>; onDon
 function LevelUp({ c, onDone }: { c: Extract<Celebration, { kind: 'level' }>; onDone: () => void }) {
   const reduce = useReducedMotion();
   return (
-    <motion.div className="fixed inset-0 z-[95] grid place-items-center bg-[rgb(3_3_8/0.7)] px-6 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onDone} role="dialog" aria-label={`Level up: level ${c.level}`}>
+    <motion.div className="fixed inset-0 z-[95] grid place-items-center bg-[var(--scrim)] px-6 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onDone} role="dialog" aria-label={`Level up: level ${c.level}`}>
       <div className="relative flex flex-col items-center text-center">
         {!reduce && (
           <motion.div className="absolute size-[340px] rounded-full border border-gold/30" initial={{ scale: 0.2, opacity: 1 }} animate={{ scale: 1.4, opacity: 0 }} transition={{ duration: 1.6, repeat: Infinity, ease: 'easeOut' }} />
@@ -94,7 +94,7 @@ function AchievementToast({ c, onDone }: { c: Extract<Celebration, { kind: 'achi
       style={{ borderColor: `color-mix(in oklab, ${color} 50%, transparent)` }}
       role="status"
     >
-      <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,rgb(255_255_255/0.06),transparent)]" />
+      <span className="absolute inset-y-0 w-1/2 animate-shimmer bg-[linear-gradient(90deg,transparent,var(--shine-soft),transparent)]" />
       <div className="relative grid size-12 shrink-0 rotate-45 place-items-center rounded-[12px] border" style={{ borderColor: color, boxShadow: `0 0 24px -6px ${color}` }}>
         <span className="-rotate-45" style={{ color }}>
           {isCampaign ? <Flag className="size-5" /> : <Icon name={c.achievement.icon} className="size-5" />}

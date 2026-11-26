@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Theme previews in Settings → Appearance, a sidebar theme toggle and a "Switch theme" command.
+- The saved theme is applied before the first paint, so reloads no longer flash dark in light mode. "System" follows the OS live.
+- Accessibility checks in CI: a WCAG contrast test for every token, axe on all screens in both themes, and a colour-literal lint (`npm run lint:colors`).
+
+### Fixed
+- Settings controls are now named for screen readers.
+- Light theme: calendar event text was white on a light background.
+- Completed items no longer use low-contrast dimming.
+- Colored tags and secondary text reach WCAG AA (4.5:1) in both themes.
+- The skill tree follows the "System" theme. Keyboard users can reach the analytics heatmap.
+
 ## [1.0.0] — 2026-11-25
 
 First public release.

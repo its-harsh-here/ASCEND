@@ -190,9 +190,43 @@ The last row was an index-only scan over 69,998 rows with 0 heap fetches.
 
 ### P0-03: local Supabase + pgTAP in CI
 
-The `database` job was added to `.github/workflows/ci.yml` (`supabase db start` + `supabase test db`, CLI pinned at 2.122.1) with `supabase/tests/000_smoke.test.sql`. Its duration will be recorded from the first CI run.
+The `database` job was added to `.github/workflows/ci.yml` (`supabase db start` + `supabase test db`, CLI pinned at 2.122.1) with `supabase/tests/000_smoke.test.sql`. First CI runs (PR #8): **66 s and 80 s** for the whole job, including starting the local stack. Both green.
 
 ### P0-02: Google OAuth on Pages (ADR-004) — **pending owner setup**
 
 This can't run in CI or this sandbox: it needs real Google consent from a person. It requires the steps in `docs/OPERATIONS.md` §1–2. It will be verified on the live site as the first task of Phase 2, behind `VITE_ENABLE_ACCOUNTS`.
 
+
+## Phase 1 results — theme completion (2026-11-26)
+
+**Where the plan changed, and why:**
+
+- **Appearance mirror (P1-06):** written from `useThemeSync` in `App.tsx`, not from `updateSettings`. Settings also change through backup restore, the demo seeder and (from P2) account switches. The hook sees the applied result of every path, while `updateSettings` sees only one. It uses one JSON key, `ascend.appearance` (`{theme, accent, motion}`), and writes only once the real settings have loaded, never while defaults are showing.
+- **`useResolvedTheme` (P1-05):** lives in `src/lib/theme.ts`. It follows the `light` class on `<html>` through `useSyncExternalStore`, so it always matches what the CSS uses.
+- **Tokens (P1-02):** only the tokens that replaced a real literal were added: `--scrim --overlay --highlight --highlight-strong --shine --shine-soft --shine-gold --gold-{hi,lo,ink} --fill-{emerald,cyan,crimson}-from --swatch-*`. The rest of the planned list (rarity, quest-type, input and status tokens) had no literal to replace. They will be added when a feature needs them, rather than as unused tokens.
+- **Quick toggle (P1-09):** placed in the sidebar footer and the command palette. The sidebar avatar is a plain link, with no menu to put it in. It cycles dark → light → system.
+- **Preview tiles (P1-08):** the token blocks are now `:root, .theme-dark` and `:root.light, .theme-light`, so any element can render either theme.
+- **Light gold button:** the light `--gold-*` gradient is darker and uses white ink. `contrast.test.ts` checks the ink at the label band's edges.
+
+**Pre-paint script CSP hash (for P7):** `sha256-cXmjqsrKm41TNGVOOpiHqDcc0KyYt6wlOx2SBQycTUw=`. Recompute it if the script in `index.html` changes.
+
+**Accessibility bugs the new axe test found (all pre-existing, all fixed):**
+
+| Finding | Fix |
+|---|---|
+| Settings switches, number inputs and selects had no accessible name; the visible row label wasn't associated | `ControlLabelContext`: `Row` provides its label/hint ids, and `Input`/`Select`/`Textarea`/`Switch` use them as `aria-labelledby`/`aria-describedby` unless given a name explicitly |
+| Colored tag chips (text on its own 12% tint) were 3.9–4.4:1 | `--c-*` shifted (dark indigo/crimson; all six in light). `contrast.test.ts` now checks chips on `--bg`, `--surface` and `--surface-2` |
+| Done quests in the calendar and dashboard timeline used `opacity` (≈1.2–2:1) | Muted text + strikethrough instead. **Rule: never dim text with opacity.** |
+| FullCalendar event text was white in light theme | `--fc-event-text-color: var(--fg)` |
+| Light `--fg-dim` was 4.47:1 on the calendar's today tint | `#6d6979` → `#625e6e` |
+| Loading skeleton, skill rank pips: `aria-label` on a role-less `div` | `role="status"` / `role="img"` |
+| Analytics heatmap scroll area was unreachable by keyboard | `tabIndex=0`, `role="region"`, label |
+| FullCalendar "+N more" had `aria-expanded` on an `<a>` without `href` | `role="button"` via `moreLinkDidMount` |
+
+**Exit measurements:**
+
+- `npm run lint:colors`: 0 literals. The only exception is `Avatar.tsx`, through an explicit pragma: its crest hues are artwork.
+- `contrast.test.ts`: 80/80, both themes × 6 accents.
+- axe (WCAG 2.0/2.1 A + AA, *all* impacts, not only serious/critical): **0 violations on 15 screens × 2 themes**. That is the 14 routes plus a campaign's detail page, with a full-page screenshot attached per screen.
+- Lighthouse 12.6.1 accessibility, desktop, demo data: **100 on all 7 sampled screens in both themes** (`/`, `/today`, `/campaigns`, `/calendar`, `/skills`, `/analytics`, `/settings`).
+- Unit tests: 158/158. e2e: 8/8 (4 existing journeys + 4 theme specs).

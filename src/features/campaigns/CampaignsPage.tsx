@@ -9,8 +9,8 @@ import { useCampaigns, useQuests, useQuestlines, useToday } from '@/hooks/data';
 import { diffDays, formatDateKey } from '@/lib/dates';
 import { formatMinutes, orEmpty } from '@/lib/utils';
 import { TEMPLATE_BY_ID } from '@/planning/catalog';
+import { swatch, swatchAlpha } from '@/lib/colors';
 
-export const CAMPAIGN_HEX: Record<string, string> = { violet: '#9b8cff', cyan: '#3fd8f0', gold: '#e9b44c', emerald: '#3ddc97', rose: '#f472b6', indigo: '#6d73ff' };
 const STATUS_TONE = { active: 'emerald', paused: 'gold', completed: 'accent', archived: 'neutral' } as const;
 
 export default function CampaignsPage() {
@@ -36,19 +36,18 @@ export default function CampaignsPage() {
             const p = campaignProgress(c, quests);
             const total = diffDays(c.endDate, c.startDate) + 1;
             const elapsed = Math.min(total, Math.max(0, diffDays(today, c.startDate) + 1));
-            const hex = CAMPAIGN_HEX[c.color] ?? CAMPAIGN_HEX.violet;
             const cLines = lines.filter((l) => l.campaignId === c.id);
             return (
               <motion.div key={c.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
                 <Link to={`/campaigns/${c.id}`} className="panel group relative block overflow-hidden p-5 transition hover:-translate-y-0.5 hover:border-line-strong" data-testid="campaign-card">
-                  <div className="absolute inset-x-0 top-0 h-24 opacity-60" style={{ background: `radial-gradient(120% 100% at 0% 0%, ${hex}33, transparent 70%)` }} />
+                  <div className="absolute inset-x-0 top-0 h-24 opacity-60" style={{ background: `radial-gradient(120% 100% at 0% 0%, ${swatchAlpha(c.color, 20)}, transparent 70%)` }} />
                   <div className="relative flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <Badge tone={STATUS_TONE[c.status]} className="mb-2 capitalize">{c.status}</Badge>
                       <h2 className="truncate font-display text-lg font-semibold group-hover:text-accent">{c.name}</h2>
                       <p className="mt-1 line-clamp-2 text-xs text-fg-muted">{c.objective || 'No objective written.'}</p>
                     </div>
-                    <ProgressRing value={p.ratio} size={64} stroke={5} tone={hex}>
+                    <ProgressRing value={p.ratio} size={64} stroke={5} tone={swatch(c.color)}>
                       <span className="font-num text-sm font-bold">{Math.round(p.ratio * 100)}%</span>
                     </ProgressRing>
                   </div>
