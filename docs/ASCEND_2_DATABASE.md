@@ -81,6 +81,8 @@ Helper functions live in schema `private`, which is not exposed through PostgRES
 
 ## 4. Phase 3 — Synced user content
 
+> **Superseded in implementation by ADR-017 (2026-11-26):** records are stored as validated JSON in one owner-scoped table, `public.synced_records`, with one generic merge (`private.apply_mutation`). The merge rules below (§4.3) are implemented as written, minus `base_rev`; the per-table DDL is not. See `supabase/migrations/20261126070000_sync.sql`.
+
 Every table below uses the §2 conventions. Columns mirror the Zod schemas one-to-one (snake_case).
 
 | Table | Mirrors (Dexie / Zod) | Notable columns and constraints | Merge policy |

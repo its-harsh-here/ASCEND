@@ -8,7 +8,8 @@ import { accountsAvailable } from '@/cloud/config';
 import { takeAuthError } from '@/cloud/callback';
 import { initSession, takeSignedOutNotice, useSession } from '@/cloud/session';
 import { gateChoiceMade, rememberGuestChoice } from '@/features/auth/gateChoice';
-import { db, isDemoMode } from '@/db/schema';
+import { db, isDemoMode, isSyncedDb } from '@/db/schema';
+import { useSyncStatus } from '@/sync/runtime';
 import { DEFAULT_SETTINGS } from '@/domain/types';
 import { useSettings, useToday } from '@/hooks/data';
 import { nowIso } from '@/lib/utils';
@@ -39,6 +40,7 @@ const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const Onboarding = lazy(() => import('@/features/onboarding/Onboarding'));
 // Account screens load only when accounts are enabled in this build.
 const Gate = lazy(() => import('@/features/auth/Gate').then((m) => ({ default: m.Gate })));
+const GuestImportPrompt = lazy(() => import('@/features/sync/GuestImport').then((m) => ({ default: m.GuestImportPrompt })));
 const ClaimScreen = lazy(() => import('@/features/auth/ClaimScreen').then((m) => ({ default: m.ClaimScreen })));
 const CommandPalette = lazy(() => import('./CommandPalette').then((m) => ({ default: m.CommandPalette })));
 const QuickAddDialog = lazy(() => import('@/components/quest/QuickAdd').then((m) => ({ default: m.QuickAddDialog })));
@@ -260,6 +262,16 @@ function useAccountsBoot(onboarded: boolean | undefined) {
   const [authError] = useState(takeAuthError);
   const [gateDone, setGateDone] = useState(() => !enabled || gateChoiceMade());
   const [claimSkipped, setClaimSkipped] = useState(false);
+  const initialPullDone = useSyncStatus((s) => s.initialPullDone);
+  const syncPhase = useSyncStatus((s) => s.phase);
+  // Never trap anyone on the splash: give up waiting after 8 s, or at once when offline / sync can't run.
+  const [pullWaitOver, setPullWaitOver] = useState(false);
+  useEffect(() => {
+    if (!enabled || onboarded || pullWaitOver) return;
+    if (syncPhase === 'offline' || syncPhase === 'error' || syncPhase === 'auth' || syncPhase === 'upgrade' || !navigator.onLine) setPullWaitOver(true);
+    const t = setTimeout(() => setPullWaitOver(true), 8000);
+    return () => clearTimeout(t);
+  }, [enabled, onboarded, pullWaitOver, syncPhase]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -282,6 +294,8 @@ function useAccountsBoot(onboarded: boolean | undefined) {
     if (location.pathname === '/auth') route = status === 'signed-in' ? 'app' : status === 'loading' ? 'splash' : 'gate';
     else if (!onboarded) {
       if (status === 'loading') route = 'splash';
+      // A new device for an existing account: wait for the first pull before offering onboarding.
+      else if (status === 'signed-in' && isSyncedDb() && !initialPullDone && !pullWaitOver) route = 'splash';
       else if (status !== 'signed-in' && !gateDone) route = 'gate';
       else if (status === 'signed-in' && profile && profile.username === null && !claimSkipped) route = 'claim';
     }
@@ -306,7 +320,9 @@ function Root() {
       return;
     }
     // Atomic check-and-insert so it can never overwrite settings saved concurrently (e.g. by onboarding).
-    void db.transaction('rw', db.settings, async () => {
+    // The apply marker keeps this local default out of the sync outbox: on a new device it must not
+    // compete with the account's real settings, which arrive with the first pull.
+    void db.transaction('rw', [db.settings, db.table('syncApplyMarker')], async () => {
       if (!(await db.settings.get('settings'))) await db.settings.put({ ...DEFAULT_SETTINGS, createdAt: nowIso() });
     });
   }, []);
@@ -336,6 +352,11 @@ function Root() {
   return (
     <MotionConfig reducedMotion={reduce}>
       <Suspense fallback={splash}>{screen}</Suspense>
+      {isSyncedDb() && (
+        <Suspense fallback={null}>
+          <GuestImportPrompt />
+        </Suspense>
+      )}
       <CelebrationLayer />
       <Toaster />
       <PwaPrompt />

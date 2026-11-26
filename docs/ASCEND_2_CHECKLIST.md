@@ -85,16 +85,16 @@
 
 ## P3 — Cloud sync
 
-- [ ] **P3-01** Dexie **v3** in `schema.ts`: add `outbox: '++seq, &mutationId, table, createdAt'`, `syncState: 'key'`, `syncConflicts: 'id, table, recordId, createdAt'`, `questCompletionEvents: 'eventId, questId, occurredAt'`, `cloudCache: 'key'`. The upgrade is a no-op. ✔ test: open a v2 DB with v3 code; data intact.
-- [ ] **P3-02** `src/sync/mapping.ts`: for each synced table, `toRow(record)` / `fromRow(row)` with camel↔snake mapping, validated with the existing Zod schemas. ✔ test: round-trip for every table using factory records.
-- [ ] **P3-03** `src/sync/middleware.ts`: install only when `resolveDbName()` starts with `ascend-u-`.
+- [x] **P3-01** Dexie **v3** in `schema.ts`: add `outbox: '++seq, &mutationId, table, createdAt'`, `syncState: 'key'`, `syncConflicts: 'id, table, recordId, createdAt'`, `questCompletionEvents: 'eventId, questId, occurredAt'`, `cloudCache: 'key'`. The upgrade is a no-op. ✔ test: open a v2 DB with v3 code; data intact.
+- [x] **P3-02** `src/sync/mapping.ts`: for each synced table, `toRow(record)` / `fromRow(row)` with camel↔snake mapping, validated with the existing Zod schemas. ✔ test: round-trip for every table using factory records.
+- [x] **P3-03** `src/sync/middleware.ts`: install only when `resolveDbName()` starts with `ascend-u-`.
   - For `put`/`add`: capture changed fields and their pre-image (`getMany` on keys).
   - For `delete`/`deleteRange`: capture tombstones.
   - Skip when a transaction carries the `ascend:applying-pull` marker.
 
   ✔ test: parameterized over every exported mutating function in `src/services/*.ts`.
-- [ ] **P3-04** In `completeQuest`/`reopenQuest` (`src/services/quests.ts`), insert a `questCompletionEvents` row `{eventId: uid(), questId, kind, occurredAt: nowIso()}` inside the existing transaction.
-- [ ] **P3-05** Migration `0002_sync.sql`:
+- [x] **P3-04** In `completeQuest`/`reopenQuest` (`src/services/quests.ts`), insert a `questCompletionEvents` row `{eventId: uid(), questId, kind, occurredAt: nowIso()}` inside the existing transaction.
+- [x] **P3-05** Migration `0002_sync.sql`:
   - sequence `sync_seq`
   - shared trigger `private.sync_stamp()`
   - every table in DATABASE §4 with composite PKs/FKs, checks and the `focus_sessions` exclusion constraint (needs `btree_gist`)
@@ -102,9 +102,9 @@
   - `sync_mutations`
 
   ✔ test: `sync_isolation.test.sql` loops over the tables: user B can't select A's rows, and DML fails for both.
-- [ ] **P3-06** `sync_push(client_schema int, mutations jsonb)`, per DATABASE §4.2–4.3: advisory lock, idempotency, merge policies, the locked-deadline rule, tombstone-wins, size limits. ✔ test: `sync_idempotency.test.sql`, `merge.test.sql` (one test per policy row in ADR-016).
-- [ ] **P3-07** `sync_pull(after_seq bigint, max_rows int)` with keyset pagination across tables, ordered by `server_seq`, returning `{rows, next_seq, has_more}`. ✔ test: pagination boundaries; tombstones included.
-- [ ] **P3-08** `src/sync/engine.ts`:
+- [x] **P3-06** `sync_push(client_schema int, mutations jsonb)`, per DATABASE §4.2–4.3: advisory lock, idempotency, merge policies, the locked-deadline rule, tombstone-wins, size limits. ✔ test: `sync_idempotency.test.sql`, `merge.test.sql` (one test per policy row in ADR-016).
+- [x] **P3-07** `sync_pull(after_seq bigint, max_rows int)` with keyset pagination across tables, ordered by `server_seq`, returning `{rows, next_seq, has_more}`. ✔ test: pagination boundaries; tombstones included.
+- [x] **P3-08** `src/sync/engine.ts`:
   - `navigator.locks.request('ascend-sync', …)`
   - loop: push batches ≤ 200 → handle results (ack delete, conflicts → `syncConflicts`, `upgrade_required` → set flag) → pull until `!has_more` → apply in a Dexie `rw` transaction with the marker, updating `syncState.lastSeq` in the same transaction
   - triggers: boot, `online`, write-debounce 2 s, 60 s interval while visible
@@ -112,15 +112,17 @@
   - 401 → `refreshSession()` once, then pause and flag
 
   ✔ test: Vitest with fake timers and a mocked RPC.
-- [ ] **P3-09** `src/hooks/useSyncStatus.ts` and the top-bar indicator (states in UI/UX §6).
-- [ ] **P3-10** `src/features/sync/ConflictReview.tsx`: list conflicts; for text fields, a side-by-side view with "Keep mine / Keep theirs / Edit merged"; for tombstones, "Restore". Resolution pushes a new mutation.
-- [ ] **P3-11** `src/sync/migrate.ts` and `MigrationWizard.tsx`. Detect guest data (`ascend` DB non-empty). Present the options from ARCHITECTURE §6 with per-entity counts. Before writing: `exportBackup()` download plus a copy into `ascend-premerge-<ts>`. Then merge in one transaction. A "Undo merge" option is available for 30 days (restores from the copy). ✔ test: preview counts, merge union, undo.
-- [ ] **P3-12** `restoreBackup` while signed in: show a dialog "Replace cloud data too?" (yes → tombstones are pushed; no → restore into a new local-only guest DB).
-- [ ] **P3-13** Settings → Cloud sync panel: last sync, pending count, conflicts, storage (`sync_status`), Sync now, remove device data.
-- [ ] **P3-14** Create `e2e/sync.spec.ts` (two contexts): offline edit convergence, delete-vs-edit, notes conflict, interrupted request (`route.abort`), replayed request, expired session recovery.
-- [ ] **P3-15** Chaos property test (`src/sync/chaos.test.ts`, local stack in CI): seeded 200 operations on 2 simulated devices with random drops → identical final state. 50 seeds.
-- [ ] **P3-16** Nightly backup workflow `.github/workflows/backup.yml` (if approved): `pg_dump` → `age` encrypt → artifact (90 days). Document a restore drill in `docs/OPERATIONS.md` and run it once.
-- [ ] **P3 Exit:** chaos 50/50 converge; all failure-scenario tests pass; 1.0 suite green; the measured push→ack p50/p95 is recorded in the PR.
+- [x] **P3-09** `src/hooks/useSyncStatus.ts` and the top-bar indicator (states in UI/UX §6).
+- [x] **P3-10** `src/features/sync/ConflictReview.tsx`: list conflicts; for text fields, a side-by-side view with "Keep mine / Keep theirs / Edit merged"; for tombstones, "Restore". Resolution pushes a new mutation.
+- [x] **P3-11** `src/sync/migrate.ts` and `MigrationWizard.tsx`. Detect guest data (`ascend` DB non-empty). Present the options from ARCHITECTURE §6 with per-entity counts. Before writing: `exportBackup()` download plus a copy into `ascend-premerge-<ts>`. Then merge in one transaction. A "Undo merge" option is available for 30 days (restores from the copy). ✔ test: preview counts, merge union, undo.
+- [x] **P3-12** `restoreBackup` while signed in: show a dialog "Replace cloud data too?" (yes → tombstones are pushed; no → restore into a new local-only guest DB).
+- [x] **P3-13** Settings → Cloud sync panel: last sync, pending count, conflicts, storage (`sync_status`), Sync now, remove device data.
+- [x] **P3-14** Create `e2e/sync.spec.ts` (two contexts): offline edit convergence, delete-vs-edit, notes conflict, interrupted request (`route.abort`), replayed request, expired session recovery.
+- [x] **P3-15** Chaos property test (`src/sync/chaos.test.ts`, local stack in CI): seeded 200 operations on 2 simulated devices with random drops → identical final state. 50 seeds.
+- [x] **P3-16** Nightly backup workflow `.github/workflows/backup.yml` (if approved): `pg_dump` → `age` encrypt → artifact (90 days). Document a restore drill in `docs/OPERATIONS.md` and run it once.
+- [x] **P3 Exit:** chaos 50/50 converge; all failure-scenario tests pass; 1.0 suite green; the measured push→ack p50/p95 is recorded in the PR.
+
+> Built 2026-11-26 behind `VITE_ENABLE_ACCOUNTS` (off). The storage design changed (ADR-017), and P3-11/12/16 differ in details; see *Phase 3 results* in ASCEND_2_DECISIONS.md. The production backup needs the owner's secrets (OPERATIONS §3, §5).
 
 ## P4 — Profiles
 

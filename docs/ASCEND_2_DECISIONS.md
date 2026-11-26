@@ -264,3 +264,87 @@ This can't run in CI or this sandbox: it needs real Google consent from a person
   axe is clean on the Gate, the claim screen and Settings → Account.
 - 1.0 journeys: **4/4 on the default build and 4/4 on the accounts build.**
 - Unit: **185/185**: account database selection (8), callback (6), config, username rules and freshness (13).
+
+## ADR-017 — One owner-scoped record store instead of ~15 typed sync tables (2026-11-26)
+
+**Context.** DATABASE §4 planned one typed Postgres table per synced client table (about 15), each with all its columns, and a hand-written three-way merge. That's roughly 15 merges to write and keep correct, plus a migration every time the app adds a field.
+
+**Decision.** Synced records are stored as validated JSON in one table, `public.synced_records (user_id, tbl, id, data jsonb, rev, server_seq, first_seen_at, updated_at, deleted_at)`, merged by **one** generic field-level function (`private.apply_mutation`).
+
+What does not change:
+- RLS: owners read their own rows only.
+- Writes go through RPCs only: `sync_push`, `sync_pull`, `sync_status`.
+- A per-user advisory lock keeps commit order equal to `server_seq` order.
+- Idempotency records, tombstones, the locked-deadline rule, text-field conflicts, size and batch limits, and `upgrade_required`.
+
+**Why it is safe.** The server never uses these records for anything public, so their content only ever affects the owner. Every pulled record is re-validated with the app's own Zod schemas, and an invalid one is skipped, never written. Phase 5's verified XP stays as planned: separate, typed, server-computed tables. `first_seen_at` (the server receipt time) is recorded for every record as the anti-cheat input.
+
+**Consequences.**
+- Adding an app field needs no database migration.
+- The composite foreign keys between synced tables are gone. A cross-user link was already impossible, because every query is scoped to `auth.uid()`.
+- The `focus_sessions` no-overlap exclusion constraint moves to Phase 5, where focus time is credited.
+- Quest status stays an ordinary synced field. Completion events are stored append-only now; deriving verified status from them is Phase 5 work.
+
+## Phase 3 results — cloud sync (2026-11-26)
+
+**Status:** built and tested behind `VITE_ENABLE_ACCOUNTS` (off). Only account databases (`ascend-u-<uid>`) sync. Guest and demo journals behave exactly as before.
+
+**How it works:**
+- A Dexie DBCore middleware captures every write in the **same** IndexedDB transaction as an outbox entry: the changed fields plus their pre-image ("base").
+- The engine pushes in order (batches of at most 200), then pulls by cursor and applies pages in one transaction under the apply marker, so pulls are never echoed back.
+- Edits still pending locally are re-applied over pulled data.
+- Triggers: start, `online`, 2 s after a write, every 60 s while visible, and Sync now. Web Locks allow one pass across tabs. Backoff is 1 s → 5 min with ±20% jitter. On an auth error the engine refreshes once and otherwise pauses; `upgrade_required` stops it.
+
+**Merge rules** (server, per field, no `base_rev` — the base values carry the same information):
+
+| Situation | Result |
+|---|---|
+| Server value = base | Applies |
+| Server value = mine | No-op |
+| Otherwise | Conflict: the server keeps its value |
+| `title`, `notes`, `description` and review text in conflict | Both versions go to review |
+| `createdAt` / `updatedAt` | Never conflict: the first `createdAt` stands, the newest `updatedAt` wins |
+| A locked deadline | Moves only in the same mutation that unlocks it |
+| A delete | Wins over a concurrent edit, unless the edit is an explicit Restore |
+| Append-only ledgers (completion events, redemptions, achievements) | Ignore later updates |
+
+**Device-local settings** never sync: theme, accent, motion, notifications, local AI, last-backup time, focus sound and volume.
+
+**Bugs the new tests caught (all fixed before merge):**
+
+1. **Silent divergence after a conflict** (chaos test). When the server kept its value and changed nothing, the record never came back in a pull, so the device kept showing its losing value forever. Now `sync_push` returns the server's current row for any conflict, partial or rejected result, and the device resets to it, with its own pending edits re-applied.
+2. **Import aborted midway** (unit test). Reading the guest database inside the account database's transaction let IndexedDB auto-commit it. All reads now happen first.
+3. **Restore did nothing** (two-device E2E). A "deleted" conflict held only the fields this device changed, so a whole record couldn't be rebuilt. It now keeps the tombstone's full last version as "theirs".
+4. **Quest editor opened blank** (two-device E2E; a 1.0 bug). On the first open after a reload, the editor could initialise before the quest list loaded. Saving that form would have overwritten the quest. It now initialises once the quest is available.
+5. **"Synced" shown while changes were queued.** The indicator counts now come live from IndexedDB.
+
+**Where the plan changed:**
+- **P3-11:** the safety net is the automatic `ascend-premerge-<ts>` copy plus a 30-day **Undo** (Settings → Cloud sync), not a forced backup download. Undo removes the imported records on every device and keeps settings, so nobody is sent back through onboarding.
+- **P3-12:** restoring a backup while signed in now carries an explicit warning, and the button reads "Replace on all my devices". "Restore only on this device" means signing out and restoring into the guest journal; there is no separate local-only account database.
+- **P3-16:** `BACKUP_AGE_RECIPIENT` is a repository *variable*, not a secret, because it's a public key.
+- **New-device onboarding:** a new device waits up to 8 s for its first pull, so it doesn't offer onboarding for an account that already has data. Offline, or on error, it proceeds at once.
+- **The local default settings row** is written under the apply marker, so it never competes with the account's real settings.
+
+**Exit measurements:**
+- **pgTAP 88/88:** smoke 3, identity 34, sync 51. The sync tests cover isolation and privileges, idempotent replay, every merge rule, timestamps, the locked deadline, tombstones and restore, append-only ledgers, validation, batch limits and pagination.
+- **Chaos 50/50 converge:** 2 devices × 200 random operations per seed, with network drops before sending *and* after the server applied a change. That's 10,000 operations and **342 real conflicts**, with both devices identical to the server every time. It runs in about 30 s.
+- **push→ack latency: p50 4.6 ms, p95 16.9 ms, max 80 ms** over 1,165 pushes. This is server-side processing on the local stack over loopback; production adds the network round trip (typically 50–250 ms from India to the Supabase region).
+- **Two-device E2E 7/7:**
+  - a new device restores the journal
+  - edits flow both ways
+  - offline edits to different fields merge
+  - a notes conflict → review → keep mine wins everywhere
+  - delete vs edit → Restore, everywhere
+  - interrupted and replayed pushes leave exactly one copy
+  - an expired token refreshes
+  - guest import → sync → undo
+
+  axe is clean on the conflict review, the import dialog and Settings → Cloud sync.
+- **Engine and middleware unit tests:**
+  - the outbox replay reproduces the synced state after ~30 kinds of service write
+  - abort rollback, no echo, device-local settings
+  - batching, acknowledgements, conflicts, paging and cursor
+  - edits made during a pull, invalid rows skipped, tombstones
+  - auth retry, backoff and jitter, debounce, upgrade/auth pauses
+  - the guest import (union, account wins, XP dedupe, undo, 30-day window)
+- **Backup drill PASSED** on the local stack: 61 users, 61 profiles, 124 records and `sync_seq` identical after dump → age → wipe → restore.

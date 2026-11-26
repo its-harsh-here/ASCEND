@@ -1,5 +1,5 @@
 import {
-  AlertTriangle, Bell, Brain, Database, Download, FileJson, FileSpreadsheet, Gamepad2, HardDrive, KeyRound, LayoutDashboard, Loader2, Palette, RefreshCcw,
+  AlertTriangle, Bell, Brain, Cloud, Database, Download, FileJson, FileSpreadsheet, Gamepad2, HardDrive, KeyRound, LayoutDashboard, Loader2, Palette, RefreshCcw,
   ShieldCheck, Timer, Trash2, Upload, User, Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -8,7 +8,7 @@ import { AVATARS, Avatar } from '@/components/game/Avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { Badge, Field, Input, PageHeader, ProgressBar, Segmented, Select, Switch } from '@/components/ui/primitives';
-import { TABLE_NAMES, db, isDemoMode, setDemoMode } from '@/db/schema';
+import { TABLE_NAMES, db, isDemoMode, isSyncedDb, setDemoMode } from '@/db/schema';
 import { ACCENTS, DASHBOARD_WIDGETS, DEFAULT_SETTINGS, DIFFICULTIES, DIFFICULTY_LABEL, type Settings } from '@/domain/types';
 import { useCampaigns, useSettings, useToday } from '@/hooks/data';
 import { diffDays, WEEKDAY_SHORT } from '@/lib/dates';
@@ -19,11 +19,13 @@ import { useUI } from '@/store/ui';
 import { swatch } from '@/lib/colors';
 import { Row, Section } from './layout';
 import { AccountSection } from './AccountSection';
+import { SyncSection } from './SyncSection';
 import { accountsAvailable } from '@/cloud/config';
 import { ThemePicker } from './ThemePicker';
 
 const SECTIONS = [
   ...(accountsAvailable() ? [{ id: 'account', label: 'Account', icon: <KeyRound /> }] : []),
+  ...(isSyncedDb() ? [{ id: 'sync', label: 'Cloud sync', icon: <Cloud /> }] : []),
   { id: 'profile', label: 'Profile', icon: <User /> },
   { id: 'appearance', label: 'Appearance', icon: <Palette /> },
   { id: 'schedule', label: 'Schedule', icon: <Timer /> },
@@ -53,6 +55,7 @@ export default function SettingsPage() {
         </nav>
         <div className="space-y-5">
           {accountsAvailable() && <AccountSection />}
+          {isSyncedDb() && <SyncSection />}
           <Section id="profile" title="Profile">
             <Field label="Display name" htmlFor="s-name"><Input id="s-name" defaultValue={s.playerName} onBlur={(e) => set({ playerName: e.target.value.trim() || 'Adventurer' })} maxLength={80} /></Field>
             <div>
@@ -181,10 +184,15 @@ function DataSection({ settings: s }: { settings: Settings }) {
       <Row label={<span className="text-crimson">Erase all data</span>} hint="Permanently delete everything in this browser."><Button variant="danger" size="sm" onClick={() => setResetOpen(true)}><Trash2 /> Erase…</Button></Row>
 
       <Dialog open={!!pending} onOpenChange={(o) => !o && setPending(null)} title="Restore this backup?" description={pending ? `Exported ${pending.backup.exportedAt.slice(0, 16).replace('T', ' ')} · schema v${pending.backup.schemaVersion}` : undefined}
-        footer={<><Button variant="ghost" onClick={() => setPending(null)}>Cancel</Button><Button variant="danger" onClick={() => void restoreBackup(pending!.backup).then(() => { setPending(null); toast({ title: 'Backup restored', tone: 'success' }); })} data-testid="confirm-restore">Replace all local data</Button></>}>
+        footer={<><Button variant="ghost" onClick={() => setPending(null)}>Cancel</Button><Button variant="danger" onClick={() => void restoreBackup(pending!.backup).then(() => { setPending(null); toast({ title: 'Backup restored', tone: 'success' }); })} data-testid="confirm-restore">{isSyncedDb() ? 'Replace on all my devices' : 'Replace all local data'}</Button></>}>
         {pending && (
           <div className="space-y-3 text-sm">
             <p className="text-fg-muted">This replaces <b className="text-fg">all</b> current data. Consider exporting a backup first.</p>
+            {isSyncedDb() && (
+              <p className="rounded-lg border border-[color-mix(in_oklab,var(--c-gold)_40%,transparent)] bg-[color-mix(in_oklab,var(--c-gold)_10%,transparent)] p-2.5 text-xs" data-testid="restore-synced-warning">
+                You’re signed in: this replaces your account journal <b>on every device</b> once it syncs. To restore only on this device, sign out and restore into the guest journal instead.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">{TABLE_NAMES.filter((t) => pending.counts[t]).map((t) => <div key={t} className="flex justify-between rounded-lg border border-line px-2.5 py-1.5 text-xs"><span>{t}</span><span className="font-num">{pending.counts[t]}</span></div>)}</div>
             {pending.warnings.map((w) => <p key={w} className="text-xs text-gold">{w}</p>)}
           </div>

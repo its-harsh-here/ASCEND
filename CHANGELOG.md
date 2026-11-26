@@ -20,6 +20,16 @@ All notable changes to this project are documented here. The format follows [Kee
   - a manual migration workflow
   - CI end-to-end tests against a local Supabase stack
 - A bundle check that fails the build if a privileged Supabase key ever ships.
+- Cloud sync for account journals (behind the same flag):
+  - works offline first
+  - field-level merging across devices
+  - a conflict review (keep mine / keep theirs / edit merged / restore)
+  - a sync indicator, and Settings → Cloud sync
+  - import of the guest journal, with a 30-day undo
+- Nightly encrypted (age) database backup workflow, and a scripted restore drill.
+
+### Fixed (sync work)
+- The quest editor could open blank on the first open after a reload; saving it could overwrite the quest.
 
 ### Fixed
 - Settings controls are now named for screen readers.

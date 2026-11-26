@@ -88,7 +88,15 @@ To turn accounts off again, delete the variable (or set it to `false`) and redep
 
 ## 5. Backups (Phase 3, owner-approved)
 
-The free plan has no automatic backups. A nightly workflow will `pg_dump` the database, encrypt it with [age](https://age-encryption.org), and keep it as a private Actions artifact for 90 days.
+The free plan has no automatic backups. `.github/workflows/backup.yml` runs every night at 02:47 IST, and on demand from Actions:
+
+1. It dumps roles, schema and data with `supabase db dump`.
+2. It encrypts them with [age](https://age-encryption.org) to **your public key**.
+3. It keeps the encrypted file as a private workflow artifact for 90 days. Plaintext never leaves the runner.
+
+Until it's configured, the workflow skips with a notice.
+
+### Setup
 
 1. Generate a key pair **on your own machine**:
 
@@ -96,29 +104,56 @@ The free plan has no automatic backups. A nightly workflow will `pg_dump` the da
    age-keygen -o ascend-backup.key
    ```
 
-   Keep `ascend-backup.key` (the private key) offline. Only it can decrypt the backups.
-2. Add the printed **public** key (`age1…`) as the GitHub secret `BACKUP_AGE_RECIPIENT`.
+   Keep `ascend-backup.key` (the private key) offline, e.g. in your password manager. Only it can decrypt the backups. If you lose it, the backups are unreadable.
+2. Add the printed **public** key (`age1…`) as the repository **variable** `BACKUP_AGE_RECIPIENT`. It's a public key, so a variable is fine.
+3. The workflow also uses the §3 secrets (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`) and the `SUPABASE_PROJECT_REF` variable.
 
-### Restore drill (run once per release)
+### Restoring
 
-1. Download the artifact.
-2. Decrypt it:
-
-   ```bash
-   age -d -i ascend-backup.key backup.sql.age > backup.sql
-   ```
-
-3. Restore it into a *local* Supabase:
+1. Actions → *Nightly encrypted backup* → pick a run → download the artifact, then unzip it to get `ascend-<date>.tgz.age`.
+2. Decrypt and unpack it:
 
    ```bash
-   supabase db start
+   age -d -i ascend-backup.key ascend-<date>.tgz.age | tar xz
+   ```
+
+   This gives you `roles.sql`, `schema.sql` and `data.sql`.
+3. Into a **fresh** project (or a local stack), apply the migrations (§3), then:
+
+   ```bash
+   psql "$DB_URL" -c "truncate private.synced_tables, private.text_fields, private.config, private.reserved_usernames, private.avatar_catalog cascade"
    ```
 
    ```bash
-   psql "$LOCAL_DB_URL" -f backup.sql
+   psql "$DB_URL" -v ON_ERROR_STOP=1 -f data.sql
    ```
 
-4. Spot-check row counts.
+   The migrations re-seed those reference tables, and the dump carries them too, hence the truncate. The dump disables triggers while loading, so server sequence numbers and timestamps are restored exactly. Devices keep syncing from where they were.
+
+### Restore drill
+
+`scripts/backup-drill.sh` runs the whole cycle against the **local** stack:
+
+1. counts the rows
+2. dumps the data the same way the workflow does
+3. age-encrypts it
+4. wipes the database
+5. decrypts and restores
+6. compares row counts, a checksum of every synced record, and the sync cursor
+
+```bash
+bash scripts/backup-drill.sh
+```
+
+**Last run: 2026-11-26.** PASSED: 61 auth users, 61 profiles, 124 synced records (3 tombstones) and `sync_seq` 8361, all identical after restore. The encrypted backup was 80 KB. Run the drill again whenever the schema changes.
+
+### Housekeeping
+
+`private.sync_purge()` deletes idempotency records older than 30 days and tombstones older than 90 days. A device that was offline for more than 90 days would then miss deletions; it re-downloads after signing in again. Scheduling it arrives with the Phase 8 keep-alive. Until then, run it monthly from the SQL editor:
+
+```sql
+select private.sync_purge();
+```
 
 ## 6. Keep-alive (owner-approved)
 
