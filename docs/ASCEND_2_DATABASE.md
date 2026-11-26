@@ -227,14 +227,17 @@ create table public.leaderboard_scores (
   quests integer not null default 0,
   focus_minutes integer not null default 0,
   reached_at timestamptz not null default now(),   -- when xp last increased → tie-break
+  eligible boolean not null default false,          -- = profile opted in and not flagged (denormalized, P0-04)
   primary key (period_kind, period_start, user_id)
 );
+-- Partial covering index: rank counts become index-only scans (spike P0-04: p95 17.6 ms at 100k users).
 create index lb_rank_idx on public.leaderboard_scores
-  (period_kind, period_start, xp desc, reached_at asc, user_id);
+  (period_kind, period_start, xp desc, reached_at asc, user_id) where eligible;
 ```
 
 - Updated in the **same transaction** as each ledger change (`+= delta`, `reached_at = now()` when the delta is positive).
 - **Ties:** equal XP is ranked by `reached_at` ascending (whoever got there first), then by `user_id` for total determinism.
+- `eligible` is updated by a trigger on `profiles` when `leaderboard_opt_in` or `flagged` changes. That's a rare write; it avoids joining `profiles` in every rank count.
 - **Reads** go through `get_leaderboard(kind, metric, period_start, after_xp, after_reached_at, after_user, limit)` (keyset pagination) and `get_rank_around_me(kind, metric, period_start)`. The rank number is `1 + count(*) of strictly better rows`, which the `lb_rank_idx` index serves. Both are `SECURITY DEFINER`, filter to `leaderboard_opt_in and not flagged and not blocked`, and return `{rank, username, display_name, avatar_id, title, xp, rank_delta}` only.
 - No direct `SELECT` for `authenticated`.
 
