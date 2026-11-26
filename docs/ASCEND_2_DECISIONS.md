@@ -6,7 +6,7 @@
 |---|---|---|
 | 001 | Keep IndexedDB/Dexie as the working DB; Postgres is a synced replica | Accepted |
 | 002 | Supabase as the backend (Auth + Postgres + one Edge Function) | Accepted |
-| 003 | Capture sync mutations with a Dexie DBCore middleware, not per-service code | Accepted (confirm in spike P0-01) |
+| 003 | Capture sync mutations with a Dexie DBCore middleware, not per-service code | **Accepted, confirmed by spike P0-01** |
 | 004 | OAuth PKCE with `detectSessionInUrl: false` and a pre-router callback handler | Accepted (confirm in spike P0-02) |
 | 005 | Account-scoped local databases with reload-on-switch | Accepted |
 | 006 | **Google + guest only.** No email/password, no password reset, no email delivery | **Accepted** |
@@ -14,7 +14,7 @@
 | 008 | Two XP ledgers: local (configurable) vs verified (server rules) | Accepted |
 | 009 | No retroactive verified XP for imported guest history | Accepted |
 | 010 | Sync `local_xp_events` (option A) | Accepted by default: not one of the 8 owner questions; recommendation adopted, easy to change before P3 |
-| 011 | Leaderboards on precomputed period scores in Postgres; no Redis | Accepted (confirm in spike P0-04) |
+| 011 | Leaderboards on precomputed period scores in Postgres; no Redis | **Accepted, confirmed by spike P0-04** (with denormalized `eligible`) |
 | 012 | **Stay on GitHub Pages** | **Accepted** (owner delegated the choice) |
 | 013 | **Keep WebLLM**, self-hosting its library so CSP `script-src 'self'` holds | **Accepted** |
 | 014 | Predefined avatars and frames only; no uploads | Accepted |
@@ -143,3 +143,56 @@ Guilds come in Phase 7, after friends and leaderboards prove the integrity model
 | 6 | Caps (1,500 XP/day, 3 boss/day, 1 legendary/week) | Yes |
 | 7 | Encrypted nightly `pg_dump` artifacts | Yes |
 | 8 | Weekly keep-alive ping | Yes |
+
+---
+
+## Phase 0 spike results (2026-11-26)
+
+### P0-01: Dexie DBCore middleware capture (ADR-003) — **confirmed**
+
+Evidence: `src/sync/dbcore-capture.spike.test.ts`, 7/7 passing. It runs the **unmodified** service functions through a prototype middleware.
+
+| Write path | Captured? |
+|---|---|
+| `createQuest` / `updateQuest` (changed fields only, e.g. `title`, `updatedAt`) | ✅ |
+| `completeQuest` / `reopenQuest`: transactions that never list `outbox` | ✅ via transaction-scope widening |
+| `Collection.modify()` and deletes (`deleteQuests` cleans dependencies and subtasks) | ✅ |
+| Bulk writes (`bulkUpdateQuests`, `activatePlan`) | ✅ |
+| `restoreBackup` → `Table.clear()` | ✅ as `deleteRange` (the case Dexie hooks miss) |
+| Aborted transaction | ✅ outbox rolls back with the data (atomic) |
+| Writes while applying a pull | ✅ skipped via a marker table in the transaction scope (no echo) |
+
+**New finding, now part of the design.** Services open transactions scoped to specific tables (e.g. `db.transaction('rw', db.quests, db.xpEvents, …)`), so `outbox` is normally out of scope. The middleware must override DBCore `transaction(stores, mode)` to append `outbox` to every read-write transaction that touches a synced table. Pull application is detected by including a dedicated marker table (`syncApplyMarker`) in the transaction scope.
+
+### P0-04: Ranking queries (ADR-011) — **confirmed, with a schema change**
+
+Local PostgreSQL 16.15 in this development sandbox, **not** Supabase's free-tier instance (re-measure there in P5). Data:
+
+- 100,000 users, 70% opted in, 0.2% flagged
+- weekly XP skewed so there are only 1,501 distinct values (heavy ties)
+- 30 runs per query, server execution time from `EXPLAIN (ANALYZE)`
+
+| Query | p50 | p95 | Target (p95) |
+|---|---|---|---|
+| First page (50 rows), join to `profiles` for eligibility | 1.55 ms | 1.75 ms | < 30 ms ✅ |
+| Keyset page at rank ~50,000 | 7.36 ms | 10.19 ms | < 30 ms ✅ |
+| *OFFSET page at 50,000 (contrast)* | *108.24 ms* | *127.89 ms* | — |
+| Rank of last-placed user, `count(*)` with join | 37.86 ms | 44.71 ms | < 30 ms ❌ |
+| **Same, with denormalized `eligible` + partial index** | **12.46 ms** | **17.63 ms** | < 30 ms ✅ |
+
+The last row was an index-only scan over 69,998 rows with 0 heap fetches.
+
+**Decisions:**
+
+- Keyset pagination is mandatory: OFFSET is about 15× slower at depth.
+- `leaderboard_scores` gains `eligible boolean`, maintained when `leaderboard_opt_in` or `flagged` change, and `lb_rank_idx` becomes a partial index `where eligible`.
+- Per-viewer blocks can't be denormalized. Blocked users are hidden from the rows a viewer sees, but they still count toward rank numbers (documented in the "How ranking works" sheet).
+
+### P0-03: local Supabase + pgTAP in CI
+
+The `database` job was added to `.github/workflows/ci.yml` (`supabase db start` + `supabase test db`, CLI pinned at 2.122.1) with `supabase/tests/000_smoke.test.sql`. Its duration will be recorded from the first CI run.
+
+### P0-02: Google OAuth on Pages (ADR-004) — **pending owner setup**
+
+This can't run in CI or this sandbox: it needs real Google consent from a person. It requires the steps in `docs/OPERATIONS.md` §1–2. It will be verified on the live site as the first task of Phase 2, behind `VITE_ENABLE_ACCOUNTS`.
+

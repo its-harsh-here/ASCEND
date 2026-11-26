@@ -26,3 +26,19 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - run: npm run e2e
+
+  # Database tests: local Supabase Postgres (Docker) + pgTAP. Only the database is started,
+  # not the whole stack, to keep CI fast; auth/E2E cloud jobs are added in Phase 2.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+      - name: Start local Postgres
+        run: supabase db start
+      - name: Run pgTAP tests
+        run: supabase test db
+
