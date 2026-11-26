@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { AVATARS, Avatar } from '@/components/game/Avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/primitives';
+import { useSession } from '@/cloud/session';
 import { setDemoMode } from '@/db/schema';
 import type { Settings } from '@/domain/types';
 import { WEEKDAY_SHORT } from '@/lib/dates';
@@ -35,7 +36,9 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
-  const [name, setName] = useState('');
+  const account = useSession((s) => (s.status === 'signed-in' ? s.user : null));
+  const accountName = useSession((s) => s.profile?.display_name);
+  const [name, setName] = useState(() => (accountName && accountName !== 'Adventurer' ? accountName : (account?.name ?? '')));
   const [avatar, setAvatar] = useState(AVATARS[0].id);
   const [goals, setGoals] = useState<string[]>([]);
   const [hours, setHours] = useState(4);
@@ -78,7 +81,11 @@ export default function Onboarding() {
           <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="mb-4 size-14 animate-float" />
           <div className="eyebrow text-accent!">Welcome to</div>
           <h1 className="mt-2 font-display text-4xl font-bold tracking-[0.25em] md:text-5xl">ASCEND</h1>
-          <p className="mt-3 max-w-md text-sm text-fg-muted">Turn real goals into campaigns, quests and visible progress. Everything stays on this device — no account required.</p>
+          <p className="mt-3 max-w-md text-sm text-fg-muted">
+            {account
+              ? `Turn real goals into campaigns, quests and visible progress. Signed in${account.email ? ` as ${account.email}` : ''} — this journal belongs to your account.`
+              : 'Turn real goals into campaigns, quests and visible progress. Everything stays on this device — no account required.'}
+          </p>
         </div>
 
         <div className="mb-5 flex items-center justify-center gap-2" role="img" aria-label={`Step ${step + 1} of ${steps.length}`}>

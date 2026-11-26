@@ -13,11 +13,22 @@ async function collectErrors(page: Page) {
   return errors;
 }
 
+/**
+ * Builds with accounts enabled show the Gate on first run; these are guest journeys, so choose guest.
+ * On the default (guest-only) build there is no Gate and this is a no-op.
+ */
+async function passGate(page: Page) {
+  const guest = page.getByTestId('gate-guest');
+  await expect(guest.or(page.getByLabel('Your name'))).toBeVisible();
+  if (await guest.isVisible()) await guest.click();
+}
+
 test('critical journey: onboarding → campaign → quest → XP → skills → persistence → backup', async ({ page }) => {
   const errors = await collectErrors(page);
 
   // 1–2. Open and complete onboarding.
   await page.goto('/');
+  await passGate(page);
   await expect(page.getByText('What should we call you?')).toBeVisible();
   await page.getByLabel('Your name').fill('Ada');
   for (let i = 0; i < 4; i++) await page.getByTestId('onboarding-next').click();
@@ -97,6 +108,7 @@ test('critical journey: onboarding → campaign → quest → XP → skills → 
 
 test('quick add parses tokens and shows interpreted fields before saving', async ({ page }) => {
   await page.goto('/');
+  await passGate(page);
   await page.getByLabel('Your name').fill('Bo');
   for (let i = 0; i < 4; i++) await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-empty').click();
@@ -116,6 +128,7 @@ test('quick add parses tokens and shows interpreted fields before saving', async
 
 test('works offline after the first visit (service worker)', async ({ page, context }) => {
   await page.goto('/');
+  await passGate(page);
   await page.getByLabel('Your name').fill('Offline');
   for (let i = 0; i < 4; i++) await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-empty').click();
@@ -145,6 +158,7 @@ test('mobile layout: bottom navigation and quest completion', async ({ browser }
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await ctx.newPage();
   await page.goto('/');
+  await passGate(page);
   await page.getByLabel('Your name').fill('Mo');
   for (let i = 0; i < 4; i++) await page.getByTestId('onboarding-next').click();
   await page.getByTestId('onboarding-empty').click();

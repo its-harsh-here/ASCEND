@@ -1,13 +1,13 @@
 import {
-  AlertTriangle, Bell, Brain, Database, Download, FileJson, FileSpreadsheet, Gamepad2, HardDrive, LayoutDashboard, Loader2, Palette, RefreshCcw,
+  AlertTriangle, Bell, Brain, Database, Download, FileJson, FileSpreadsheet, Gamepad2, HardDrive, KeyRound, LayoutDashboard, Loader2, Palette, RefreshCcw,
   ShieldCheck, Timer, Trash2, Upload, User, Zap,
 } from 'lucide-react';
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getProvider, loadWebLLM, webgpuSupported, type AIStatus } from '@/ai/providers';
 import { AVATARS, Avatar } from '@/components/game/Avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { Badge, ControlLabelContext, Field, Input, PageHeader, Panel, ProgressBar, Segmented, Select, Switch } from '@/components/ui/primitives';
+import { Badge, Field, Input, PageHeader, ProgressBar, Segmented, Select, Switch } from '@/components/ui/primitives';
 import { TABLE_NAMES, db, isDemoMode, setDemoMode } from '@/db/schema';
 import { ACCENTS, DASHBOARD_WIDGETS, DEFAULT_SETTINGS, DIFFICULTIES, DIFFICULTY_LABEL, type Settings } from '@/domain/types';
 import { useCampaigns, useSettings, useToday } from '@/hooks/data';
@@ -17,9 +17,13 @@ import { checkIntegrity, downloadBackup, downloadQuestCsv, restoreBackup, valida
 import { requestPersistentStorage, storageEstimate, updateSettings } from '@/services/core';
 import { useUI } from '@/store/ui';
 import { swatch } from '@/lib/colors';
+import { Row, Section } from './layout';
+import { AccountSection } from './AccountSection';
+import { accountsAvailable } from '@/cloud/config';
 import { ThemePicker } from './ThemePicker';
 
 const SECTIONS = [
+  ...(accountsAvailable() ? [{ id: 'account', label: 'Account', icon: <KeyRound /> }] : []),
   { id: 'profile', label: 'Profile', icon: <User /> },
   { id: 'appearance', label: 'Appearance', icon: <Palette /> },
   { id: 'schedule', label: 'Schedule', icon: <Timer /> },
@@ -33,32 +37,6 @@ const SECTIONS = [
 
 const WIDGET_LABEL: Record<string, string> = { character: 'Character progression', briefing: 'Daily briefing', quests: "Today's quests", campaigns: 'Campaign progress', timeline: 'Daily timeline', insights: 'Productivity insights', heatmap: 'Activity heatmap' };
 
-function Section({ id, title, description, children }: { id: string; title: string; description?: string; children: ReactNode }) {
-  return (
-    <Panel id={id} className="scroll-mt-24 p-6">
-      <h2 className="font-display text-lg font-semibold">{title}</h2>
-      {description && <p className="mt-1 text-sm text-fg-muted">{description}</p>}
-      <div className="mt-5 space-y-4">{children}</div>
-    </Panel>
-  );
-}
-
-function Row({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
-  const id = useId();
-  const ctx = useMemo(() => ({ labelId: `${id}-label`, hintId: hint ? `${id}-hint` : undefined }), [id, !!hint]); // eslint-disable-line react-hooks/exhaustive-deps -- only presence of the hint matters
-  return (
-    <div className="flex flex-col gap-2 border-b border-line pb-4 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0">
-        <div id={ctx.labelId} className="text-sm font-semibold">{label}</div>
-        {hint && <div id={ctx.hintId} className="text-xs text-fg-muted">{hint}</div>}
-      </div>
-      <div className="shrink-0">
-        <ControlLabelContext.Provider value={ctx}>{children}</ControlLabelContext.Provider>
-      </div>
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const s = useSettings();
   const campaigns = orEmpty(useCampaigns());
@@ -66,7 +44,7 @@ export default function SettingsPage() {
   const set = (patch: Partial<Settings>) => void updateSettings(patch);
   return (
     <div>
-      <PageHeader eyebrow="Configuration" title="Settings" description="All settings are stored locally on this device." />
+      <PageHeader eyebrow="Configuration" title="Settings" description={accountsAvailable() ? 'Settings are stored on this device, per journal.' : 'All settings are stored locally on this device.'} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[200px_1fr]">
         <nav aria-label="Settings sections" className="hidden lg:block">
           <div className="sticky top-24 space-y-0.5">
@@ -74,6 +52,7 @@ export default function SettingsPage() {
           </div>
         </nav>
         <div className="space-y-5">
+          {accountsAvailable() && <AccountSection />}
           <Section id="profile" title="Profile">
             <Field label="Display name" htmlFor="s-name"><Input id="s-name" defaultValue={s.playerName} onBlur={(e) => set({ playerName: e.target.value.trim() || 'Adventurer' })} maxLength={80} /></Field>
             <div>

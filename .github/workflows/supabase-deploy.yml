@@ -1,0 +1,49 @@
+name: Supabase — apply migrations and functions
+
+# Manual only: production schema changes are never applied on merge (docs/ASCEND_2_DATABASE.md §10).
+# Requires repository secrets SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD, and the variable
+# SUPABASE_PROJECT_REF (the "elzeoihdahambhqbfveh" part of the project URL). See docs/OPERATIONS.md §3.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply for real (unchecked = dry run: list pending migrations only)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+      - name: Check configuration
+        run: |
+          missing=0
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || { echo "::error::secret SUPABASE_ACCESS_TOKEN is not set"; missing=1; }
+          [ -n "$SUPABASE_DB_PASSWORD" ] || { echo "::error::secret SUPABASE_DB_PASSWORD is not set"; missing=1; }
+          [ -n "$PROJECT_REF" ] || { echo "::error::variable SUPABASE_PROJECT_REF is not set"; missing=1; }
+          exit $missing
+      - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Pending migrations (dry run)
+        run: supabase db push --dry-run --password "$SUPABASE_DB_PASSWORD"
+      - name: Apply migrations
+        if: ${{ inputs.apply }}
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+      - name: Deploy Edge Functions
+        if: ${{ inputs.apply }}
+        run: supabase functions deploy delete-account --project-ref "$PROJECT_REF"

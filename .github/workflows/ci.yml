@@ -24,22 +24,38 @@ jobs:
       - run: npm run lint:colors
       - run: npm test
       - run: npm run build
+      - name: No privileged keys in the bundle
+        run: npm run check:dist
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - run: npm run e2e
 
-  # Database tests: local Supabase Postgres (Docker) + pgTAP. Only the database is started,
-  # not the whole stack, to keep CI fast; auth/E2E cloud jobs are added in Phase 2.
+  # Local Supabase (Postgres, Auth, API gateway, Edge Functions) in Docker:
+  #  1. pgTAP: schema, RLS and RPC rules (supabase/tests)
+  #  2. accounts E2E: an accounts-enabled build against the local stack (playwright.accounts.config.ts),
+  #     plus the 1.0 guest journeys on that build. Sessions come from the LOCAL-only email provider;
+  #     the keys are the local stack's well-known demo keys, not production credentials.
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
           version: 2.122.1
-      - name: Start local Postgres
-        run: supabase db start
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Start local Supabase
+        run: supabase start -x studio,imgproxy,logflare,vector,supavisor,realtime,storage-api,mailpit,postgres-meta
       - name: Run pgTAP tests
         run: supabase test db
-
+      - run: npm ci
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Accounts E2E against the local stack
+        run: |
+          eval "$(supabase status -o env | sed 's/^/export SBX_/')"
+          SB_ANON_KEY="$SBX_ANON_KEY" SB_SERVICE_ROLE_KEY="$SBX_SERVICE_ROLE_KEY" \
+            npx playwright test -c playwright.accounts.config.ts --trace off

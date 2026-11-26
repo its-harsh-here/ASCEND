@@ -33,6 +33,13 @@ jobs:
         env:
           # Pages serves project sites from /<repository>/
           BASE_PATH: /${{ github.event.repository.name }}/
+          # Public values only (repository *variables*): the project URL and the anon/publishable key.
+          # Accounts stay off until the VITE_ENABLE_ACCOUNTS variable is set to "true" (docs/OPERATIONS.md §4).
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_ENABLE_ACCOUNTS: ${{ vars.VITE_ENABLE_ACCOUNTS }}
+      - name: No privileged keys in the bundle
+        run: npm run check:dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

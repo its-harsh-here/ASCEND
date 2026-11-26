@@ -38,6 +38,18 @@ export default defineConfig({
         navigateFallback: 'index.html',
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         cleanupOutdatedCaches: true,
+        // supabase-js is only for signed-in users: keep it out of the precache so guests never download it,
+        // and cache it on first use so a signed-in user still boots offline.
+        globIgnores: ['**/supabase-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && /\/assets\/supabase-[\w-]+\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'ascend-cloud-lib', expiration: { maxEntries: 4 } },
+          },
+          // Auth, RPC and function calls must always hit the network: never serve a cached session or profile.
+          { urlPattern: ({ url }) => url.hostname.endsWith('.supabase.co') || url.port === '54321', handler: 'NetworkOnly' },
+        ],
       },
     }),
   ],
@@ -52,6 +64,7 @@ export default defineConfig({
         // Stable vendor chunks: app updates don't invalidate cached framework code.
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
+          if (/node_modules\/@supabase\//.test(id)) return 'supabase';
           if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) return 'react';
           if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return 'motion';
           if (/node_modules\/(dexie|dexie-react-hooks|zod|date-fns|zustand)\//.test(id)) return 'data';

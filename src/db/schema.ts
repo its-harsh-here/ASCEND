@@ -1,3 +1,4 @@
+import { resolveDbName } from './accounts';
 import Dexie, { type Table } from 'dexie';
 import {
   DEFAULT_SETTINGS,
@@ -129,24 +130,7 @@ export const TABLE_NAMES = [
 ] as const;
 export type TableName = (typeof TABLE_NAMES)[number];
 
-const MODE_KEY = 'ascend:mode';
+export { isDemoMode, setDemoMode } from './accounts';
 
-export function isDemoMode(): boolean {
-  try {
-    return globalThis.localStorage?.getItem(MODE_KEY) === 'demo';
-  } catch {
-    return false;
-  }
-}
-
-export function setDemoMode(on: boolean): void {
-  try {
-    if (on) localStorage.setItem(MODE_KEY, 'demo');
-    else localStorage.removeItem(MODE_KEY);
-  } catch {
-    /* storage unavailable */
-  }
-}
-
-/** Demo mode uses a completely separate database so sample data never touches the real journal. */
-export const db = new AscendDB(isDemoMode() ? 'ascend-demo' : 'ascend');
+/** Demo, guest and each account get separate databases, so sample data and accounts never mix (accounts.ts). */
+export const db = new AscendDB(resolveDbName());

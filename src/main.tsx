@@ -4,10 +4,18 @@ import '@fontsource-variable/cinzel';
 import '@fontsource-variable/manrope';
 import '@fontsource-variable/jetbrains-mono';
 import './styles/index.css';
-import App from './app/App';
+import { handleOAuthCallback } from './cloud/callback';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// The OAuth callback decides which account database opens, so it must finish before the app
+// (and the module-level Dexie instance) is imported. Without ?auth=callback this resolves at once.
+async function boot() {
+  await handleOAuthCallback();
+  const { default: App } = await import('./app/App');
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+void boot();
